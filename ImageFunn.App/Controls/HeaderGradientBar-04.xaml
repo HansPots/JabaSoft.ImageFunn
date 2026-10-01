@@ -1,0 +1,54 @@
+<UserControl x:Class="ImageFunn.App.Controls.HeaderGradientBar04"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theming="clr-namespace:Stylebook.Components.Theming;assembly=Stylebook.Components"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Width="1819" Height="36">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!-- Variant van HeaderGradientBar-02 (de kale, doorlopende balk zonder
+         elleboog) met een balkhoogte van 36 in plaats van 48. De ronde
+         rechterkant volgt die hoogte: TopRight = 36, zodat het uiteinde een
+         halve cirkel blijft.
+
+         Breedte 1819 staat op het UserControl hierboven en niet meer op een
+         Canvas hierbinnen: die maat loopt precies tot het frame van
+         WindowControlButtons. Er zit geen Viewbox omheen - die schaalt
+         UNIFORM en zou de hoogte meetrekken. Nu rekt de Border alleen in de
+         breedte, en kan wie hem plaatst er Width="Auto" op zetten om hem de
+         beschikbare ruimte te laten vullen. -->
+    <Grid>
+
+                <Border HorizontalAlignment="Stretch"
+                        VerticalAlignment="Top"
+                        theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusBar}"
+                        theming:CornerRadiusParts.TopRight="0"
+                        theming:CornerRadiusParts.BottomRight="0"
+                        theming:CornerRadiusParts.BottomLeft="0"
+                        Height="36">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <LinearGradientBrush.GradientStops>
+                                <GradientStop Color="{DynamicResource HeaderGradientStartColor}" Offset="0" />
+                                <GradientStop Color="{DynamicResource HeaderGradientMidColor}" Offset="0.45" />
+                                <GradientStop Color="{DynamicResource HeaderGradientEndColor}" Offset="1" />
+                            </LinearGradientBrush.GradientStops>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+    </Grid>
+
+</UserControl>

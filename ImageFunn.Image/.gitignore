@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+uitvoer/
+service.log
+install.log
+download.log

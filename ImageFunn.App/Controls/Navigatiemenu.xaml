@@ -1,0 +1,195 @@
+<UserControl x:Class="ImageFunn.App.Controls.Navigatiemenu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theming="clr-namespace:Stylebook.Components.Theming;assembly=Stylebook.Components"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" MinHeight="400"
+             d:DesignWidth="256" d:DesignHeight="846">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Het navigatiemenu van ImageFunn: Home plus de twee kanten van ImageFunn:
+        beeld naar tekst en tekst naar beeld. Home is geen
+        scherm van deze app maar brengt je terug naar Jabasoft, dus die knop
+        blijft nooit gemarkeerd staan - zelfde afspraak als in Jabasoft en
+        AI Studio.
+
+        Het component navigeert NIET zelf: elke knop meldt via het event
+        ItemSelected welke gekozen is, en de app eromheen beslist wat er dan
+        gebeurt. Zo blijft er geen app-kennis in het menu zitten, en kan
+        ImageFunn hier later gewoon eigen knoppen bij zetten zonder dat de
+        werking verandert.
+
+        Hoogte mag meebewegen, breedte niet: de knoppen staan in de *-rij en
+        de zwarte strook met de versiebalk in de Auto-rij eronder, dus die
+        blijven onderaan plakken hoe hoog het menu ook wordt. De breedte ligt
+        vast in de Menu-kolom van Basis (256).
+    -->
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.RowSpan="2"
+                    Background="{DynamicResource TextMutedBrush}"
+                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                    theming:CornerRadiusParts.BottomLeft="{DynamicResource RadiusXLarge}"/>
+
+            <StackPanel Grid.Row="0"
+                        theming:MarginParts.Left="{DynamicResource SpaceMedium}"
+                        theming:MarginParts.Top="{DynamicResource SpaceLarge}"
+                        theming:MarginParts.Right="{DynamicResource SpaceMedium}"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceLarge}">
+
+                <!-- Home: terug naar Jabasoft. Geen scherm van deze app maar
+                     een andere applicatie, dus deze knop blijft nooit
+                     gemarkeerd staan. -->
+                <Button x:Name="HomeButton" Content="Home" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Beeld naar tekst: een afbeelding laten beschrijven of uitlezen. -->
+                <Button x:Name="BeeldNaarTekstButton" Content="Beeld naar tekst" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Tekst naar beeld: een beeld laten genereren uit een omschrijving. -->
+                <Button x:Name="TekstNaarBeeldButton" Content="Tekst naar beeld" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M5 4v3h5.5v12h3V7H19V4z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+            </StackPanel>
+
+            <!-- Onderkant van het menu: blijft altijd onderaan staan, ook als
+                 de hoogte van het menu verandert. -->
+            <StackPanel Grid.Row="1">
+                <Border Background="{DynamicResource BackgroundBrush}"
+                        HorizontalAlignment="Stretch"
+                        Height="{DynamicResource RegionGapSize}" />
+
+                <!-- Versie-indicator. Het nummer staat hier NIET: de app zet
+                     het bij het opbouwen van het menu, uitgelezen uit de
+                     gebouwde assembly (zie Jabasoft.Base/AppVersion). -->
+                <Border x:Name="VersionBar"
+                        theming:CornerRadiusParts.TopLeft="0"
+                        theming:CornerRadiusParts.TopRight="0"
+                        theming:CornerRadiusParts.BottomRight="0"
+                        theming:CornerRadiusParts.BottomLeft="{DynamicResource RadiusElbow}"
+                        Background="{DynamicResource AccentBrush}"
+                        HorizontalAlignment="Stretch"
+                        Height="40">
+                    <TextBlock x:Name="VersionText"
+                               TextWrapping="Wrap"
+                               HorizontalAlignment="Stretch"
+                               Height="20"
+                               Margin="30,0,16,0"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right"
+                               d:Text="V 0.0.0.0" />
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+
+</UserControl>

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <!-- Het versienummer van deze applicatie, los van dat van de rest van de
+         familie: elke app telt zijn eigen wijzigingen. Elke wijziging:
+         laatste cijfer +1. -->
+    <Version>0.1.0.3</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Gedeelde styling/theming: dezelfde {DynamicResource}-tokens als de
+         rest van de familie, zodat ImageFunn er hetzelfde uitziet zonder
+         hier ooit een kleur hard te coderen. -->
+    <ProjectReference Include="..\..\Jabasoft.Stylebook\Stylebook.Components\Stylebook.Components.csproj" />
+
+    <!-- De gedeelde bouwstenen: AppHandover (single-instance), de AI-broker,
+         gezondheidsbewaking en logging. -->
+    <ProjectReference Include="..\..\Jabasoft.Base\Jabasoft.Base.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

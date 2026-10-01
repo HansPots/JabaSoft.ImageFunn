@@ -1,0 +1,68 @@
+<UserControl x:Class="ImageFunn.App.Controls.LogButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theming="clr-namespace:Stylebook.Components.Theming;assembly=Stylebook.Components"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Log-knop voor de Actie-rail, boven de verversknop (zie Actiebalk.xaml)
+        - zelfde mechanisme als in AI Studio. Zelfde vorm als RefreshButton
+        (48 breed, rechts rond), maar een ToggleButton: AAN = het logpaneel
+        van de huidige pagina staat open (accentkleur), UIT = dicht.
+
+        ImageFunn heeft nog geen scherm dat met een model praat, dus deze
+        knop staat voorlopig altijd uitgeschakeld (grijs) - zie
+        MainWindow.xaml.cs. Het mechanisme staat er wel klaar voor zodra er
+        een eerste scherm met logging bijkomt.
+    -->
+    <ToggleButton x:Name="LogAction" Width="48" Height="48" HorizontalAlignment="Left" VerticalAlignment="Top"
+                  AutomationProperties.Name="Log"
+                  Foreground="{DynamicResource BackgroundBrush}">
+        <ToggleButton.Template>
+            <ControlTemplate TargetType="ToggleButton">
+                <Border x:Name="Bd"
+                        theming:CornerRadiusParts.TopLeft="0"
+                        theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXXLarge}"
+                        theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXXLarge}"
+                        theming:CornerRadiusParts.BottomLeft="0"
+                        Background="{DynamicResource BorderBrush}">
+                    <TextBlock Text="LOG"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{TemplateBinding Foreground}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Bd" Property="Opacity" Value="0.8" />
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                    </Trigger>
+                    <!-- Grijs/licht wanneer deze pagina niet met een model praat
+                         (zie IHeeftLog) - niet verborgen, zo blijft de
+                         rail-opbouw op elke pagina hetzelfde. -->
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter TargetName="Bd" Property="Opacity" Value="0.35" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </ToggleButton.Template>
+    </ToggleButton>
+
+</UserControl>

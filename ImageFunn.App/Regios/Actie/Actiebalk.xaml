@@ -1,0 +1,45 @@
+<UserControl x:Class="ImageFunn.App.Regios.Actie.Actiebalk"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ImageFunn.App.Controls"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Width="48"
+             d:DesignHeight="805">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        De actierail: de smalle strook rechts, 48 breed net als de
+        Actie-kolom in Basis. Zit ingebakken in de paginaschil
+        (Paginas/Hoofdscherm), dus hij staat op ELKE pagina - niet per
+        scherm opnieuw opgebouwd. Zelfde opbouw als AI Studio: de Log-knop
+        boven de verversknop.
+
+        Net als Navigatiemenu doet dit component zelf niets: het meldt via
+        events wat er is aangeklikt, en de app bepaalt wat er dan gebeurt.
+    -->
+    <StackPanel VerticalAlignment="Bottom">
+        <controls:LogButton x:Name="LogAction"
+                            Width="Auto"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,6" />
+
+        <!-- Verversen: zet de splitters in de header en de footer terug op hun standaardstand. -->
+        <controls:RefreshButton x:Name="RefreshAction"
+                                Width="Auto"
+                                HorizontalAlignment="Stretch" />
+    </StackPanel>
+
+</UserControl>

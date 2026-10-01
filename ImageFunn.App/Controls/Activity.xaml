@@ -1,0 +1,92 @@
+<UserControl x:Class="ImageFunn.App.Controls.Activity"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Height="166" Width="450">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Het Activity-blok in de header: wat de applicatie en de
+        achtergrondprocessen doen. Zelfde vorm als Infoblok2 (titelbalk
+        boven een leesvlak), maar met een meelopende lijst regels in plaats
+        van een vaste tekst.
+
+        De regels komen uit de gedeelde ActivityLog in Jabasoft.Base. De
+        app schrijft daar zijn eigen regels in, en BrokerLogReader haalt die
+        van de AI-broker erbij - via een endpoint, zodat je hem ook ziet
+        als een ANDERE applicatie hem aan het werk zet.
+    -->
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource RegionBorderThickness}"
+            CornerRadius="{DynamicResource RadiusMedium}"
+            HorizontalAlignment="Stretch">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Titelbalk, gelijk aan die van de infoblokken ernaast. -->
+            <Border Grid.Row="0" Background="{DynamicResource BorderBrush}"
+                    CornerRadius="{DynamicResource RegionBorderInnerRadius}" Height="24" Padding="8,0">
+                <TextBlock Text="Activiteit" FontSize="18" Foreground="{DynamicResource Text01Brush}"
+                           VerticalAlignment="Center" HorizontalAlignment="Left" />
+            </Border>
+
+            <!-- Nieuwste regel onderaan, en er wordt automatisch meegescrold
+                 (zie Activity.xaml.cs). De horizontale balk staat uit: een
+                 lange regel wordt afgekapt in plaats van het blok breder te
+                 maken. -->
+            <ScrollViewer x:Name="LogScroller" Grid.Row="1" Margin="8,4,8,8"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <!-- IsSharedSizeScope is hier de kern: zonder dat meet elke
+                     regel zijn eigen Auto-kolommen op en staat de tekst per
+                     regel op een andere plek. Met een gedeelde maatgroep
+                     pakken alle regels samen de breedste tijd en de breedste
+                     bron, en lijnt de boodschap netjes uit. -->
+                <ItemsControl x:Name="LogLines" Grid.IsSharedSizeScope="True">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="Tijd" />
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="Bron" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="{Binding Time, StringFormat=HH:mm:ss}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding Source}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="2" Text="{Binding Message}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+
+</UserControl>

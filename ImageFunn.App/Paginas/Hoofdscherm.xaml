@@ -1,0 +1,57 @@
+<UserControl x:Class="ImageFunn.App.Paginas.Hoofdscherm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ImageFunn.App.Controls"
+             xmlns:header="clr-namespace:ImageFunn.App.Regios.Header"
+             xmlns:footer="clr-namespace:ImageFunn.App.Regios.Footer"
+             xmlns:actie="clr-namespace:ImageFunn.App.Regios.Actie"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="1920" d:DesignHeight="1080">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        De opgeslagen paginacompositie voor ImageFunn's hoofdscherm - gelijk
+        aan die van Jabasoft en AI Studio: een Basis met de Header en de
+        Footer er al in gebakken.
+
+        Menu/Inhoud/Actie zijn BEWUST niet gebakken: die vult de echte,
+        draaiende ImageFunn.App in code-behind (het Navigatiemenu, het
+        scherm waar dat menu naartoe schakelt, en de actierail - zie
+        ImageFunn.App/MainWindow.xaml.cs). Dit component geeft die drie
+        slots gewoon door aan zijn eigen MenuContent/MainContent/
+        ActionContent-properties, precies zoals Basis zelf al werkt.
+
+        Alles wat hier staat is van DEZE app: eigen Basis, eigen Hoofdbalk,
+        eigen Statusbalk, eigen Actiebalk. Er wordt niets met Jabasoft of
+        AI Studio gedeeld, zodat een aanpassing hier die applicaties niet
+        meeverandert.
+    -->
+    <controls:Basis x:Name="Shell">
+        <controls:Basis.HeaderContent>
+            <header:Hoofdbalk />
+        </controls:Basis.HeaderContent>
+        <controls:Basis.FooterContent>
+            <footer:Statusbalk />
+        </controls:Basis.FooterContent>
+        <!-- De actierail zit hier ingebakken en niet per scherm opgebouwd,
+             zodat hij op elke pagina staat. -->
+        <controls:Basis.ActionContent>
+            <actie:Actiebalk />
+        </controls:Basis.ActionContent>
+    </controls:Basis>
+
+</UserControl>

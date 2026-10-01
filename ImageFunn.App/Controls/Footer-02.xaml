@@ -1,0 +1,55 @@
+<UserControl x:Class="ImageFunn.App.Controls.Footer02"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Width="384" Height="24">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Footerpil 2 van 5: CPU. Meterpil - label, waarde en daarachter een
+        balkje dat de rest van de pil vult. Zelfde maatvoering als pil 3 en 4.
+    -->
+    <Border Height="24" CornerRadius="{DynamicResource RadiusLarge}"
+            Background="{DynamicResource BorderBrush}"
+            HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <Grid Margin="12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="CPU"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource BackgroundBrush}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" x:Name="ValueText" Text="31%" Margin="8,0,0,0"
+                       FontSize="{DynamicResource FontSizeSmall}" FontWeight="SemiBold"
+                       Foreground="{DynamicResource BackgroundBrush}" VerticalAlignment="Center" />
+
+            <Grid Grid.Column="2" Height="4" Margin="12,0,0,0" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="BarFill" Width="31*" />
+                    <ColumnDefinition x:Name="BarRest" Width="69*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="2" CornerRadius="{DynamicResource RadiusSmall}"
+                        Background="{DynamicResource BackgroundBrush}" Opacity="0.25" />
+                <Border Grid.Column="0" CornerRadius="{DynamicResource RadiusSmall}"
+                        Background="{DynamicResource BackgroundBrush}" />
+            </Grid>
+        </Grid>
+    </Border>
+
+</UserControl>

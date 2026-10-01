@@ -1,0 +1,46 @@
+<UserControl x:Class="ImageFunn.App.Controls.Footer01"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Width="288" Height="24">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Footerpil 1 van 5: SYSTEM HEALTH. Statuspil met een stiplampje en
+        een toestandstekst, zonder voortgangsbalk - de enige van de vijf
+        die alleen tekst toont.
+
+        Het lampje en de tekst worden gezet met Show(), vanuit de gedeelde
+        HealthMonitor in Jabasoft.Base - zie Footer-01.xaml.cs en
+        Regios/Footer/Statusbalk.xaml.cs.
+    -->
+    <Border Height="24" CornerRadius="{DynamicResource RadiusLarge}"
+            Background="{DynamicResource TextMutedBrush}"
+            HorizontalAlignment="Stretch" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Margin="12,0" VerticalAlignment="Center">
+            <Ellipse x:Name="StatusLamp" Width="8" Height="8"
+                     Fill="{DynamicResource HealthBusyBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="SYSTEM HEALTH" Margin="8,0,0,0"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource Text01Brush}"
+                       Opacity="0.85" VerticalAlignment="Center" />
+            <TextBlock x:Name="StatusText" Text="Starting" Margin="10,0,0,0"
+                       FontSize="{DynamicResource FontSizeSmall}" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Text01Brush}" VerticalAlignment="Center" />
+        </StackPanel>
+    </Border>
+
+</UserControl>

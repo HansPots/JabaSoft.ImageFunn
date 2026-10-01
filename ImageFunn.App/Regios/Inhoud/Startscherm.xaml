@@ -1,0 +1,38 @@
+<UserControl x:Class="ImageFunn.App.Regios.Inhoud.Startscherm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="1616" d:DesignHeight="846">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Inhoud-regio component: het startscherm van ImageFunn, waar de
+        Home-knop in het menu naartoe wijst (zie Controls/Navigatiemenu en
+        ImageFunn.App/MainWindow.xaml.cs). Nog leeg - net zoals Jabasoft's
+        eigen hoofdscherm dat was voordat de app daadwerkelijk zijn eerste
+        schermen kreeg. De schil eromheen (header, menu, actierail, footer)
+        werkt al wel net zo als in AI Studio.
+    -->
+    <Grid>
+        <TextBox Text="ImageFunn - kies links: beeld naar tekst, of tekst naar beeld."
+                 Style="{DynamicResource SelectableTextStyle}"
+                 Foreground="{DynamicResource TextMutedBrush}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center" />
+    </Grid>
+
+</UserControl>

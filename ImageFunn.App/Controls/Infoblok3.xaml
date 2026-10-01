@@ -1,0 +1,60 @@
+<UserControl x:Class="ImageFunn.App.Controls.Infoblok3"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Height="166" Width="450">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Header-regio component: kopie van Infoblok2 (zelfde 450x166 kader en
+        gekleurde titelbalk), maar met het bodytekstblok vervangen door een
+        tabel van rijen met twee kolommen - links het label, rechts de
+        waarde. Voorbeeldtekst, kleuren via DynamicResource.
+    -->
+    <Border Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="{DynamicResource RegionBorderThickness}"
+            CornerRadius="{DynamicResource RadiusMedium}"
+            HorizontalAlignment="Stretch">
+        <StackPanel>
+            <Border Background="{DynamicResource BorderBrush}" CornerRadius="{DynamicResource RegionBorderInnerRadius}" Height="24" Padding="8,0">
+                <TextBlock Text="InfoBlok" FontSize="18" Foreground="{DynamicResource Text01Brush}" VerticalAlignment="Center" TextWrapping="Wrap" Height="24" HorizontalAlignment="Left" TextAlignment="Center" />
+            </Border>
+            <Grid Margin="8" Height="116">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24" />
+                    <RowDefinition Height="24" />
+                    <RowDefinition Height="24" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Kolom 1" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="Kolom 2" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Snelheid" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="112" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Afstand" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="353" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </Border>
+
+</UserControl>

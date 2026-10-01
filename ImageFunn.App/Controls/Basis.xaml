@@ -1,0 +1,99 @@
+<UserControl x:Class="ImageFunn.App.Controls.Basis"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="1920" d:DesignHeight="1080">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Standaard app-schil, gelijk aan die van Jabasoft en AI Studio: header
+        en footer over de volle breedte, daartussen een vaste linker
+        menustrook en een vaste rechter actiestrook rond de meebewegende
+        hoofdinhoud. Elke regio heeft een eigen content-slot
+        (HeaderContent/MenuContent/MainContent/ActionContent/FooterContent,
+        zie Basis.xaml.cs).
+
+        Vaste maten: Header 210, Footer 24, Menu 256, Actie 48. Alleen de
+        hoofdinhoud is variabel (kolom 2 en rij 1, allebei "*").
+    -->
+
+    <!-- De omhullende opvulling doet de onderste en rechterrand van de
+         pagina: de blokken hieronder geven alleen ruimte aan hun linker- en
+         bovenkant, en daar is aan die twee randen geen buur voor. -->
+    <Border Background="{DynamicResource BackgroundBrush}"
+            Padding="{DynamicResource RegionGapEndThickness}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: volle breedte, vaste hoogte -->
+        <Border Grid.Row="0"
+                Margin="{DynamicResource RegionGapLeftTopThickness}"
+                Background="{DynamicResource SurfaceBrush}">
+            <ContentPresenter Content="{Binding HeaderContent, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch" />
+        </Border>
+
+        <!-- Midden: menu | hoofdinhoud | action, elk vaste breedte behalve de hoofdinhoud -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="256" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="{DynamicResource RegionGapLeftTopThickness}"
+                    Background="{DynamicResource SurfaceBrush}">
+                <ContentPresenter Content="{Binding MenuContent, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch" />
+            </Border>
+
+            <Border Grid.Column="1"
+                    Margin="{DynamicResource RegionGapLeftTopThickness}"
+                    Background="{DynamicResource BackgroundBrush}">
+                <ContentPresenter Content="{Binding MainContent, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch" />
+            </Border>
+
+            <Border Grid.Column="2"
+                    Margin="{DynamicResource RegionGapLeftTopThickness}"
+                    Background="{DynamicResource SurfaceBrush}">
+                <ContentPresenter Content="{Binding ActionContent, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch" />
+            </Border>
+        </Grid>
+
+        <!-- Footer: volle breedte, vaste hoogte -->
+        <Border Grid.Row="2"
+                Margin="{DynamicResource RegionGapLeftTopThickness}"
+                Background="{DynamicResource SurfaceBrush}">
+            <ContentPresenter Content="{Binding FooterContent, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               HorizontalAlignment="Stretch"
+                               VerticalAlignment="Stretch" />
+        </Border>
+    </Grid>
+    </Border>
+
+</UserControl>

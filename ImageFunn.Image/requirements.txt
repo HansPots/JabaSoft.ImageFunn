@@ -1,0 +1,17 @@
+# ImageFunn.Image - lokale tekst-naar-beeld service.
+#
+# Eerst PyTorch met CUDA (RTX 40xx), daarna de rest:
+#   py -3.11 -m venv .venv
+#   .venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+diffusers
+transformers
+accelerate
+safetensors
+sentencepiece
+protobuf
+# 4-bit kwantisatie: FLUX past daarmee op een kaart van 12 GB.
+bitsandbytes
+fastapi
+uvicorn
+pillow

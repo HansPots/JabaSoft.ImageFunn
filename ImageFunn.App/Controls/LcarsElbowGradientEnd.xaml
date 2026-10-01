@@ -1,0 +1,31 @@
+<UserControl x:Class="ImageFunn.App.Controls.LcarsElbowGradientEnd"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:theming="clr-namespace:Stylebook.Components.Theming;assembly=Stylebook.Components"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" Width="48" Height="200">
+
+    <!-- Design-time-only: geeft Visual Studio/Blend's Designer een
+         thema-context (kleuren, lettertype) - deze class library heeft
+         zelf geen App.xaml die dat normaal doet. mc:Ignorable="d" zorgt
+         dat dit bij het echt compileren/draaien volledig wegvalt. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!-- Algemeen: LCARS-hoekblok (alleen linksonder rond), HeaderSideGradientEndBrush-kleur, 48x200. -->
+    <Border theming:CornerRadiusParts.TopLeft="0"
+            theming:CornerRadiusParts.TopRight="0"
+            theming:CornerRadiusParts.BottomRight="0"
+            theming:CornerRadiusParts.BottomLeft="{DynamicResource RadiusElbow}"
+            Background="{DynamicResource HeaderSideGradientEndBrush}"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch" />
+
+</UserControl>
