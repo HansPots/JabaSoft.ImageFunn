@@ -21,6 +21,9 @@ public partial class TekstNaarVideo : UserControl
 
     private readonly ImageServiceClient _service = new();
 
+    /// <summary>Is de Clean-knop gebruikt? Dan gaat de tekst ongewijzigd naar het model, zonder vertaling en zonder stijltekst.</summary>
+    private bool _clean;
+
     private readonly Promptverbeteraar _verbeteraar;
 
     private string? _huidigeVideo;
@@ -34,8 +37,17 @@ public partial class TekstNaarVideo : UserControl
         Loaded += async (_, _) => await VulGalerijAsync();
     }
 
+    private void CleanButton_Click(object sender, RoutedEventArgs e)
+    {
+        _clean = true;
+        MaakButton_Click(sender, e);
+    }
+
     private async void MaakButton_Click(object sender, RoutedEventArgs e)
     {
+        var clean = _clean;
+        _clean = false;
+
         var scene = PromptBox.Text.Trim();
         if (scene.Length == 0)
         {
@@ -47,6 +59,7 @@ public partial class TekstNaarVideo : UserControl
         var formaat = ((string)((ComboBoxItem)FormaatKeuze.SelectedItem).Tag).Split('x');
 
         MaakButton.IsEnabled = false;
+        CleanButton.IsEnabled = false;
         Voortgang.Value = 0;
         Voortgang.Visibility = Visibility.Visible;
         StatusText.Text = "Taak starten…";
@@ -56,7 +69,7 @@ public partial class TekstNaarVideo : UserControl
             var prompt = scene;
 
             // Het videomodel leest alleen Engels. Lukt het omschrijven niet, dan gaat de originele tekst mee.
-            if (VerbeterBox.IsChecked == true)
+            if (!clean && VerbeterBox.IsChecked == true)
             {
                 StatusText.Text = "Scène vertalen en verbeteren…";
                 var (verbeterd, fout) = await _verbeteraar.VerbeterAsync(scene, CancellationToken.None, Promptsoort.Scene);
@@ -76,6 +89,7 @@ public partial class TekstNaarVideo : UserControl
                 BronBeeld = null,
                 Prompt = prompt,
                 Frames = frames,
+                Videomodel = (string)((ComboBoxItem)ModelKeuze.SelectedItem).Tag,
                 Breedte = int.Parse(formaat[0]),
                 Hoogte = int.Parse(formaat[1]),
             });
@@ -110,6 +124,7 @@ public partial class TekstNaarVideo : UserControl
         finally
         {
             MaakButton.IsEnabled = true;
+            CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
         }
     }

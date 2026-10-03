@@ -82,7 +82,13 @@
                              ToolTip="Bijvoorbeeld: de heks vliegt langzaam naar rechts, de wolken drijven voorbij en de camera zoomt rustig in" />
                 </Border>
 
-                <Grid Grid.Row="3" Margin="0,14,0,0">
+                <StackPanel Grid.Row="3">
+                    <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,14,0,0"
+                              ToolTip="LTX is snel maar beweegt vooral de camera. Wan 2.2 beweegt personen en dingen echter, maar is veel trager en de eerste keer wordt er ±30 GB aan model geladen.">
+                        <ComboBoxItem Content="Videomodel: LTX-Video (snel)" Tag="ltx" />
+                        <ComboBoxItem Content="Videomodel: Wan 2.2 (echtere beweging, trager)" Tag="wan" />
+                    </ComboBox>
+                    <Grid Margin="0,14,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="10" />
@@ -99,6 +105,7 @@
                         <ComboBoxItem Content="Scherp (trager)" Tag="768x512" />
                     </ComboBox>
                 </Grid>
+                </StackPanel>
 
                 <CheckBox Grid.Row="4" x:Name="VerbeterBox" IsChecked="True" Margin="0,14,0,0"
                           Content="Beweging automatisch vertalen en verbeteren"
@@ -106,8 +113,12 @@
                           ToolTip="Het videomodel begrijpt alleen Engels. Hiermee schrijft het chatmodel je omschrijving eerst om." />
 
                 <StackPanel Grid.Row="5" Margin="0,16,0,0">
-                    <Button x:Name="MaakButton" Content="Maak video" Click="MaakButton_Click"
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="MaakButton" Content="Maak video" Click="MaakButton_Click"
                             Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="CleanButton" Content="Clean" Click="CleanButton_Click" Margin="10,0,0,0"
+                                ToolTip="Clean: je tekst gaat precies zo naar het model. Niet vertaald, niet verbeterd en zonder stijltekst erbij. Schrijf dan zelf in het Engels." Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
                     <ProgressBar x:Name="Voortgang" Height="6" Minimum="0" Maximum="1" Margin="0,10,0,0"
                                  Visibility="Collapsed" Foreground="{DynamicResource AccentBrush}"
                                  Background="{DynamicResource BackgroundBrush}" BorderThickness="0" />

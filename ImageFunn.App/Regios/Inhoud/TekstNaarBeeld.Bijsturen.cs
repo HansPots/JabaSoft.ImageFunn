@@ -61,7 +61,8 @@ public partial class TekstNaarBeeld
 
     private void StelPenseelIn()
     {
-        if (Tekenvlak is null || PenseelSlider is null)
+        // Tijdens het opbouwen van het scherm melden de schuiven al een waarde terwijl de rest nog niet bestaat.
+        if (Tekenvlak is null || PenseelSlider is null || GumBox is null)
         {
             return;
         }

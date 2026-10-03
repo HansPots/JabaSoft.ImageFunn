@@ -26,6 +26,9 @@ public partial class BeeldNaarVideo : UserControl
 
     private readonly ImageServiceClient _service = new();
 
+    /// <summary>Is de Clean-knop gebruikt? Dan gaat de tekst ongewijzigd naar het model, zonder vertaling en zonder stijltekst.</summary>
+    private bool _clean;
+
     private readonly Promptverbeteraar _verbeteraar;
 
     private string? _bronBestand;
@@ -104,8 +107,17 @@ public partial class BeeldNaarVideo : UserControl
         }
     }
 
+    private void CleanButton_Click(object sender, RoutedEventArgs e)
+    {
+        _clean = true;
+        MaakButton_Click(sender, e);
+    }
+
     private async void MaakButton_Click(object sender, RoutedEventArgs e)
     {
+        var clean = _clean;
+        _clean = false;
+
         if (_bronBestand is null)
         {
             StatusText.Text = "Kies eerst een beeld om te laten bewegen.";
@@ -116,6 +128,7 @@ public partial class BeeldNaarVideo : UserControl
         var formaat = ((string)((ComboBoxItem)KwaliteitKeuze.SelectedItem).Tag).Split('x');
 
         MaakButton.IsEnabled = false;
+        CleanButton.IsEnabled = false;
         Voortgang.Value = 0;
         Voortgang.Visibility = Visibility.Visible;
         StatusText.Text = "Taak starten…";
@@ -125,7 +138,7 @@ public partial class BeeldNaarVideo : UserControl
             var beweging = PromptBox.Text.Trim();
 
             // Het videomodel leest alleen Engels. Lukt het omschrijven niet, dan gaat de originele tekst mee.
-            if (VerbeterBox.IsChecked == true && beweging.Length > 0)
+            if (!clean && VerbeterBox.IsChecked == true && beweging.Length > 0)
             {
                 StatusText.Text = "Beweging vertalen en verbeteren…";
                 var (verbeterd, fout) = await _verbeteraar.VerbeterAsync(beweging, CancellationToken.None, Promptsoort.Beweging);
@@ -145,6 +158,7 @@ public partial class BeeldNaarVideo : UserControl
                 BronBeeld = _bronBestand,
                 Prompt = beweging,
                 Frames = frames,
+                Videomodel = (string)((ComboBoxItem)ModelKeuze.SelectedItem).Tag,
                 Breedte = int.Parse(formaat[0]),
                 Hoogte = int.Parse(formaat[1]),
             });
@@ -179,6 +193,7 @@ public partial class BeeldNaarVideo : UserControl
         finally
         {
             MaakButton.IsEnabled = true;
+            CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
         }
     }

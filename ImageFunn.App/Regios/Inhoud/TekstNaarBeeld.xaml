@@ -118,8 +118,12 @@
                 </Grid>
 
                 <StackPanel Grid.Row="6" Margin="0,16,0,0">
-                    <Button x:Name="GenereerButton" Content="Genereer" Click="GenereerButton_Click"
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="GenereerButton" Content="Genereer" Click="GenereerButton_Click"
                             Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="CleanButton" Content="Clean" Click="CleanButton_Click" Margin="10,0,0,0"
+                                ToolTip="Clean: je tekst gaat precies zo naar het model. Niet vertaald, niet verbeterd en zonder stijltekst erbij. Schrijf dan zelf in het Engels." Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
                     <ProgressBar x:Name="Voortgang" Height="6" Minimum="0" Maximum="1" Margin="0,10,0,0"
                                  Visibility="Collapsed" Foreground="{DynamicResource AccentBrush}"
                                  Background="{DynamicResource BackgroundBrush}" BorderThickness="0" />

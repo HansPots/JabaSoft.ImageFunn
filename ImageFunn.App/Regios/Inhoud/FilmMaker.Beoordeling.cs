@@ -89,6 +89,26 @@ public partial class FilmMaker
     /// <summary>De modellen lezen alleen Engels: scènes zonder Engelse tekst laten we eerst afleiden. False = mislukt.</summary>
     private async Task<bool> LeidAfMissendeAsync()
     {
+        // Clean: geen vertaling. Wat je bij 'Wat gebeurt er?' typt wordt zelf het beeld en de beweging.
+        if (Clean)
+        {
+            foreach (var scene in _scenes.Where(s => string.IsNullOrEmpty(s.Bestand)))
+            {
+                if (string.IsNullOrWhiteSpace(scene.Beeld))
+                {
+                    scene.Beeld = scene.Gebeurt.Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(scene.Beweging))
+                {
+                    scene.Beweging = scene.Gebeurt.Trim();
+                }
+            }
+
+            ToonScene();
+            return true;
+        }
+
         var afleiden = _scenes.Where(s => string.IsNullOrEmpty(s.Bestand) && string.IsNullOrWhiteSpace(s.Beeld)).ToList();
         for (var n = 0; n < afleiden.Count; n++)
         {
@@ -135,7 +155,7 @@ public partial class FilmMaker
             Hoogte = int.Parse(formaat[1]),
             Modus = TagVan(ModusKeuze),
             Stijl = StijlVoorService(),
-            Negatief = HuidigeStijl().Negatief,
+            Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Seed = Random.Shared.Next(),
             Referentie = referentie,

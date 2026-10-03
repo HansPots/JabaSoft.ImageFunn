@@ -17,3 +17,4 @@ uvicorn
 pillow
 imageio
 imageio-ffmpeg
+ftfy

@@ -27,8 +27,14 @@ public partial class FilmMaker
 
     private Beeldstijl HuidigeStijl() => Beeldstijl.Van(TagVan(BeeldstijlKeuze));
 
-    /// <summary>De stijl zoals de service hem krijgt: altijd met de gekozen stijltekst ervoor.</summary>
-    private string StijlVoorService() => HuidigeStijl().MetStijl(StijlBox.Text.Trim());
+    /// <summary>Is 'Clean' aangevinkt? Dan gaat wat je typt ongewijzigd naar de modellen: niet vertaald, en zonder stijltekst.</summary>
+    private bool Clean => CleanBox.IsChecked == true;
+
+    /// <summary>De stijl zoals de service hem krijgt: met de gekozen stijltekst ervoor, behalve bij Clean.</summary>
+    private string StijlVoorService() => Clean ? StijlBox.Text.Trim() : HuidigeStijl().MetStijl(StijlBox.Text.Trim());
+
+    /// <summary>De negatieve prompt bij de gekozen stijl; bij Clean de neutrale (alleen kwaliteit en tekst).</summary>
+    private string NegatiefVoorService() => Clean ? Beeldstijl.Van("geen").Negatief : HuidigeStijl().Negatief;
 
     /// <summary>Wisselt je de beeldstijl, dan gaat de stijltekst in het vak mee (als hij met een bekende stijl begint).</summary>
     private void BeeldstijlKeuze_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -517,9 +523,15 @@ public partial class FilmMaker
             return true;
         }
 
-        // De beeldmodellen lezen alleen Engels: de omschrijving eerst laten omzetten.
+        // De beeldmodellen lezen alleen Engels: de omschrijving eerst laten omzetten. Bij Clean is de omschrijving zelf de prompt.
         foreach (var item in nodig.Where(c => string.IsNullOrWhiteSpace(c.Beeld)))
         {
+            if (Clean && !string.IsNullOrWhiteSpace(item.Beschrijving))
+            {
+                item.Beeld = item.Beschrijving.Trim();
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(item.Beschrijving))
             {
                 CastStatus.Text = $"'{item.Naam}' heeft nog geen omschrijving.";
@@ -545,7 +557,7 @@ public partial class FilmMaker
             Breedte = int.Parse(formaat[0]),
             Hoogte = int.Parse(formaat[1]),
             Stijl = StijlVoorService(),
-            Negatief = HuidigeStijl().Negatief,
+            Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Seed = Random.Shared.Next(),
             Cast = _cast,

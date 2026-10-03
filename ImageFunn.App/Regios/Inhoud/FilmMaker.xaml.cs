@@ -545,7 +545,7 @@ public partial class FilmMaker : UserControl
             Modus = TagVan(ModusKeuze),
             Overgang = TagVan(OvergangKeuze),
             Stijl = StijlVoorService(),
-            Negatief = HuidigeStijl().Negatief,
+            Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Referentie = referentie,
             EersteAlsReferentie = eerste,

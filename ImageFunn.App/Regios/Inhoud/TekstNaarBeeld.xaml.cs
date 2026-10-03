@@ -27,6 +27,9 @@ public partial class TekstNaarBeeld : UserControl
 
     private readonly ImageServiceClient _service = new();
 
+    /// <summary>Is de Clean-knop gebruikt? Dan gaat de tekst ongewijzigd naar het model, zonder vertaling en zonder stijltekst.</summary>
+    private bool _clean;
+
     private string? _huidigBestand;
 
     /// <summary>De Engelse prompt waarmee het getoonde beeld gemaakt is, nodig om het bij te sturen.</summary>
@@ -56,8 +59,17 @@ public partial class TekstNaarBeeld : UserControl
         StatusText.Text = "Prompt overgenomen - pas aan en druk op Genereer.";
     }
 
+    private void CleanButton_Click(object sender, RoutedEventArgs e)
+    {
+        _clean = true;
+        GenereerButton_Click(sender, e);
+    }
+
     private async void GenereerButton_Click(object sender, RoutedEventArgs e)
     {
+        var clean = _clean;
+        _clean = false;
+
         var prompt = PromptBox.Text.Trim();
         if (prompt.Length == 0)
         {
@@ -79,6 +91,7 @@ public partial class TekstNaarBeeld : UserControl
         }
 
         GenereerButton.IsEnabled = false;
+        CleanButton.IsEnabled = false;
         Voortgang.Value = 0;
         Voortgang.Visibility = Visibility.Visible;
         StatusText.Text = "Taak starten…";
@@ -88,7 +101,7 @@ public partial class TekstNaarBeeld : UserControl
             // Het beeldmodel leest alleen Engels: eerst laten omschrijven door het chatmodel.
             // Lukt dat niet, dan gaat de originele tekst gewoon mee.
             var beeldPrompt = prompt;
-            if (VerbeterBox.IsChecked == true)
+            if (!clean && VerbeterBox.IsChecked == true)
             {
                 StatusText.Text = "Prompt vertalen en verbeteren…";
                 var (verbeterd, fout) = await _verbeteraar.VerbeterAsync(prompt, CancellationToken.None);
@@ -104,7 +117,8 @@ public partial class TekstNaarBeeld : UserControl
             }
 
             // De gekozen stijl komt vóór de prompt, en hoort bij een eigen negatieve prompt (bijvoorbeeld "geen tekening" bij realistisch).
-            var stijl = Beeldstijl.Van((string)((ComboBoxItem)StijlKeuze.SelectedItem).Tag);
+            // Clean: de stijl "geen" voegt niets toe, dus de tekst gaat precies zoals getypt naar het beeldmodel.
+            var stijl = Beeldstijl.Van(clean ? "geen" : (string)((ComboBoxItem)StijlKeuze.SelectedItem).Tag);
             beeldPrompt = stijl.MetStijl(beeldPrompt);
 
             var jobId = await _service.StartJobAsync(new BeeldOpdracht
@@ -148,6 +162,7 @@ public partial class TekstNaarBeeld : UserControl
         finally
         {
             GenereerButton.IsEnabled = true;
+            CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
         }
     }

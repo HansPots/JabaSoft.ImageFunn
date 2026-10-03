@@ -495,6 +495,9 @@
                         </ListBox.ItemsPanel>
                     </ListBox>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                        <CheckBox x:Name="CleanBox" Content="Clean" VerticalAlignment="Center" Margin="0,0,14,0"
+                                  Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                                  ToolTip="Clean: je tekst gaat precies zo naar het model. Niet vertaald, niet verbeterd en zonder stijltekst erbij. Schrijf dan zelf in het Engels. Geldt voor de scènes en de cast; de tijdlijn uit je idee schrijft het chatmodel altijd." />
                         <Button x:Name="MaakButton" Content="Maak film" Click="MaakButton_Click" Style="{DynamicResource AccentButtonStyle}" />
                         <Button x:Name="StopButton" Content="Stop" Click="StopButton_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
                         <Button x:Name="SpeelKlaarButton" Content="Speel wat klaar is" Click="SpeelKlaar_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}"

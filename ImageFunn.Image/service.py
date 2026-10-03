@@ -114,6 +114,8 @@ class Opdracht(BaseModel):
     soort: Literal["beeld", "video", "film", "sleutelbeelden", "cast"] = "beeld"
     bron_beeld: str | None = None
     frames: int = Field(97, ge=9, le=161)
+    # Welk videomodel: "ltx" (snel, LTX-Video 0.9.1) of "wan" (Wan 2.2 5B: echtere beweging, trager). Geldt voor soort "video".
+    videomodel: Literal["ltx", "wan"] = "ltx"
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
     modus: Literal["doorlopend", "sleutelbeelden"] = "sleutelbeelden"
@@ -164,6 +166,7 @@ class Taak:
             "soort": self.opdracht.soort,
             "bron_beeld": self.opdracht.bron_beeld,
             "frames": self.opdracht.frames,
+            "videomodel": self.opdracht.videomodel,
             "seed": self.seed,
             "scenes": [sc.model_dump() for sc in self.opdracht.scenes],
             "modus": self.opdracht.modus,
@@ -180,6 +183,8 @@ _wachtrij_slot = threading.Lock()  # één beeld tegelijk: de GPU is maar één 
 _pipe = None
 _video_pipe = None  # tekst naar video (LTXPipeline)
 _video_i2v = None  # beeld naar video, deelt de onderdelen van _video_pipe
+_video_model = ""  # welk videomodel er in _video_pipe staat: "ltx" of "wan"
+WAN_ID = "Wan-AI/Wan2.2-TI2V-5B-Diffusers"
 _ip_beschikbaar = False  # is de IP-Adapter (voorbeeldbeeld voor dezelfde personages) bij SDXL geladen?
 _pipe_slot = threading.Lock()
 
@@ -404,7 +409,7 @@ def _draai_beeld(taak: Taak) -> None:
 
 def _geef_video_vrij() -> None:
     """Eén model tegelijk in het geheugen: de GPU en het RAM zijn niet groot genoeg voor beide."""
-    global _video_pipe, _video_i2v
+    global _video_pipe, _video_i2v, _video_model
     if _video_pipe is not None:
         import gc
 
@@ -412,6 +417,7 @@ def _geef_video_vrij() -> None:
 
         _video_pipe = None
         _video_i2v = None
+        _video_model = ""
         gc.collect()
         torch.cuda.empty_cache()
 
@@ -432,17 +438,39 @@ def _geef_beeld_vrij() -> None:
         torch.cuda.empty_cache()
 
 
-def _laad_videopijplijn(meld, vanaf_beeld: bool):
+def _laad_videopijplijn(meld, vanaf_beeld: bool, model: str = "ltx"):
     """
-    LTX-Video. Eén keer laden, daarna blijft het in het geheugen; tekst naar video en
+    LTX-Video of Wan 2.2. Eén keer laden, daarna blijft het in het geheugen; tekst naar video en
     beeld naar video delen dezelfde onderdelen (from_pipe), dus het model staat maar één keer in het geheugen.
+    Wordt het andere videomodel gevraagd, dan wordt het huidige eerst losgelaten: beide samen passen niet.
     """
-    global _video_pipe, _video_i2v
+    global _video_pipe, _video_i2v, _video_model
     with _pipe_slot:
+        if _video_pipe is not None and _video_model != model:
+            _geef_video_vrij()
         if _video_pipe is not None:
             return _laad_i2v() if vanaf_beeld else _video_pipe
 
         import torch
+
+        if model == "wan":
+            from diffusers import AutoencoderKLWan, WanPipeline
+
+            if not torch.cuda.is_available():
+                raise RuntimeError("Geen CUDA-GPU gevonden - installeer PyTorch met CUDA (zie requirements.txt).")
+
+            _geef_beeld_vrij()
+            meld("Videomodel laden (Wan 2.2)… (de eerste keer duurt dit langer)")
+            # De VAE rekent in float32 (zo is het model getraind); de rest in bfloat16.
+            vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32)
+            pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, torch_dtype=torch.bfloat16)
+            pipe.enable_model_cpu_offload()
+            pipe.vae.enable_tiling()
+            pipe.set_progress_bar_config(disable=True)
+            _video_pipe = pipe
+            _video_model = "wan"
+            return _laad_i2v() if vanaf_beeld else pipe
+
         from diffusers import LTXPipeline
 
         if not torch.cuda.is_available():
@@ -455,15 +483,21 @@ def _laad_videopijplijn(meld, vanaf_beeld: bool):
         pipe.vae.enable_tiling()
         pipe.set_progress_bar_config(disable=True)
         _video_pipe = pipe
+        _video_model = "ltx"
         return _laad_i2v() if vanaf_beeld else pipe
 
 
 def _laad_i2v():
     global _video_i2v
     if _video_i2v is None:
-        from diffusers import LTXImageToVideoPipeline
+        if _video_model == "wan":
+            from diffusers import WanImageToVideoPipeline
 
-        _video_i2v = LTXImageToVideoPipeline.from_pipe(_video_pipe)
+            _video_i2v = WanImageToVideoPipeline.from_pipe(_video_pipe)
+        else:
+            from diffusers import LTXImageToVideoPipeline
+
+            _video_i2v = LTXImageToVideoPipeline.from_pipe(_video_pipe)
         _video_i2v.set_progress_bar_config(disable=True)
     return _video_i2v
 
@@ -564,10 +598,11 @@ def _draai_video(taak: Taak) -> None:
             if vanaf_beeld and not Path(o.bron_beeld).is_file():
                 raise RuntimeError("Het bronbeeld is niet gevonden.")
 
-            pipe = _laad_videopijplijn(lambda tekst: setattr(taak, "stap", tekst), vanaf_beeld)
+            wan = o.videomodel == "wan"
+            pipe = _laad_videopijplijn(lambda tekst: setattr(taak, "stap", tekst), vanaf_beeld, o.videomodel)
 
-            # LTX rekent in blokken van 32 pixels; het aantal beelden is 8n+1.
-            frames = (o.frames - 1) // 8 * 8 + 1
+            # Beide rekenen in blokken van 32 pixels; het aantal beelden is 8n+1 (LTX) of 4n+1 (Wan).
+            frames = (o.frames - 1) // (4 if wan else 8) * (4 if wan else 8) + 1
             if vanaf_beeld:
                 # Het formaat volgt de verhouding van het bronbeeld.
                 bron = Image.open(o.bron_beeld).convert("RGB")
@@ -579,7 +614,7 @@ def _draai_video(taak: Taak) -> None:
                 bron = None
                 breedte = max(256, o.breedte // 32 * 32)
                 hoogte = max(256, o.hoogte // 32 * 32)
-            stappen = o.stappen or 40
+            stappen = o.stappen or (30 if wan else 40)
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
 
@@ -590,16 +625,20 @@ def _draai_video(taak: Taak) -> None:
 
             taak.stap = "Animeren…" if vanaf_beeld else "Video maken…"
             extra = {"image": bron} if vanaf_beeld else {}
+            model_args = (
+                {"guidance_scale": 5.0}
+                if wan
+                else {"decode_timestep": 0.03, "decode_noise_scale": 0.025}
+            )
             beelden = pipe(
                 **extra,
                 prompt=o.prompt,
-                negative_prompt=o.negatief or "worst quality, inconsistent motion, blurry, jittery, distorted",
+                negative_prompt=o.negatief or "worst quality, inconsistent motion, blurry, jittery, distorted, static, still image",
                 width=breedte,
                 height=hoogte,
                 num_frames=frames,
                 num_inference_steps=stappen,
-                decode_timestep=0.03,
-                decode_noise_scale=0.025,
+                **model_args,
                 generator=torch.Generator("cuda").manual_seed(seed),
                 callback_on_step_end=stap_klaar,
             ).frames[0]
@@ -1158,6 +1197,7 @@ def health() -> dict[str, Any]:
         "model": MODEL_KEUZE,
         "model_geladen": _pipe is not None,
         "video_model_geladen": _video_pipe is not None,
+        "video_model": _video_model,
         "ontlaad_na": ONTLAAD_NA,
         "cuda": cuda,
         "gpu": gpu,

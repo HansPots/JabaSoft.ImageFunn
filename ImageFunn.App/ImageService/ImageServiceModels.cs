@@ -37,6 +37,10 @@ public sealed class BeeldOpdracht
     [JsonPropertyName("frames")]
     public int Frames { get; set; } = 97;
 
+    /// <summary>"ltx" (snel) of "wan" (Wan 2.2: echtere beweging, trager) - alleen bij soort "video".</summary>
+    [JsonPropertyName("videomodel")]
+    public string Videomodel { get; set; } = "ltx";
+
     /// <summary>De scènes van een film - alleen bij soort "film".</summary>
     [JsonPropertyName("scenes")]
     public List<FilmScene> Scenes { get; set; } = [];
