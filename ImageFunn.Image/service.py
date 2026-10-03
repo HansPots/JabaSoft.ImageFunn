@@ -127,6 +127,10 @@ class Opdracht(BaseModel):
     speler_sterkte: float = Field(0.5, ge=0.0, le=1.0)
     plek_sterkte: float = Field(0.4, ge=0.0, le=1.0)
     voorwerp_sterkte: float = Field(0.35, ge=0.0, le=1.0)
+    # Bijsturen van een bestaand beeld (soort "beeld" met bron_beeld): masker = wit is het gebied dat mag veranderen;
+    # zonder masker verandert het hele beeld, zoveel als sterkte toelaat.
+    masker: str | None = None
+    sterkte: float = Field(0.5, ge=0.05, le=1.0)
 
 
 class Taak:
@@ -412,8 +416,12 @@ def _geef_video_vrij() -> None:
         torch.cuda.empty_cache()
 
 
+_bewerk_pijplijnen: dict[str, Any] = {}  # beeld naar beeld en inpainting, delen de onderdelen van _pipe
+
+
 def _geef_beeld_vrij() -> None:
     global _pipe
+    _bewerk_pijplijnen.clear()
     if _pipe is not None:
         import gc
 
@@ -458,6 +466,89 @@ def _laad_i2v():
         _video_i2v = LTXImageToVideoPipeline.from_pipe(_video_pipe)
         _video_i2v.set_progress_bar_config(disable=True)
     return _video_i2v
+
+
+def _draai_bewerk(taak: Taak) -> None:
+    """
+    Een bestaand beeld bijsturen. Zonder masker is dat beeld naar beeld: het beeld wordt deels opnieuw opgebouwd, zoveel
+    als "sterkte" toelaat (laag = de indeling blijft, hoog = meer vrijheid). Met een masker is het inpainting: alleen het
+    witte gebied wordt opnieuw gemaakt, de rest blijft zoals het was.
+    """
+    with _wachtrij_slot:
+        taak.status = "bezig"
+        try:
+            import torch
+            from diffusers import StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline
+            from PIL import Image
+
+            o = taak.opdracht
+            if not SDXL_FAMILIE:
+                raise RuntimeError("Bijsturen werkt alleen met Juggernaut of SDXL.")
+            if not _bestaat_pad(o.bron_beeld):
+                raise RuntimeError("Het beeld om bij te sturen is niet gevonden.")
+
+            basis = _laad_pijplijn(lambda t: setattr(taak, "stap", t))
+
+            # Het formaat blijft zoals het was (veelvoud van 8), met een bovengrens van ongeveer 1,3 megapixel.
+            bron = Image.open(o.bron_beeld).convert("RGB")
+            k = min(1.0, (1_300_000 / (bron.width * bron.height)) ** 0.5)
+            breedte, hoogte = max(64, round(bron.width * k / 8) * 8), max(64, round(bron.height * k / 8) * 8)
+            bron = bron.resize((breedte, hoogte), Image.LANCZOS)
+
+            masker = None
+            if _bestaat_pad(o.masker):
+                masker = Image.open(o.masker).convert("L").resize((breedte, hoogte), Image.LANCZOS)
+                masker = masker.point(lambda v: 255 if v > 127 else 0)
+
+            soort = "inpaint" if masker is not None else "i2i"
+            if soort not in _bewerk_pijplijnen:
+                klasse = StableDiffusionXLInpaintPipeline if masker is not None else StableDiffusionXLImg2ImgPipeline
+                _bewerk_pijplijnen[soort] = klasse.from_pipe(basis)
+                _bewerk_pijplijnen[soort].set_progress_bar_config(disable=True)
+            pijplijn = _bewerk_pijplijnen[soort]
+
+            stappen = o.stappen or 30
+            totaal = max(1, int(stappen * o.sterkte))
+            seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
+            taak.seed = seed
+
+            def stap_klaar(_p, i, _t, kwargs):
+                taak.voortgang = min(1.0, (i + 1) / totaal)
+                taak.stap = f"Bijsturen: stap {i + 1} van {totaal}"
+                return kwargs
+
+            args: dict[str, Any] = dict(
+                prompt=o.prompt,
+                negative_prompt=o.negatief or None,
+                image=bron,
+                strength=o.sterkte,
+                num_inference_steps=stappen,
+                guidance_scale=GUIDANCE,
+                generator=torch.Generator("cpu").manual_seed(seed),
+                callback_on_step_end=stap_klaar,
+            )
+            args.update(_ip_args(pijplijn))
+            if masker is not None:
+                # padding_mask_crop: alleen rond het gebied wordt op volle resolutie gewerkt, wat de details beter maakt.
+                args.update(mask_image=masker, padding_mask_crop=32, width=breedte, height=hoogte)
+
+            taak.stap = "Bijsturen…"
+            beeld = pijplijn(**args).images[0]
+
+            map_ = UITVOER / taak.job_id
+            map_.mkdir(parents=True, exist_ok=True)
+            pad = map_ / "beeld.png"
+            beeld.save(pad)
+            taak.bestand = str(pad)
+            taak.voortgang = 1.0
+            taak.stap = "Klaar"
+            taak.status = "klaar"
+            (map_ / "meta.json").write_text(json.dumps(taak.als_dict(), ensure_ascii=False), encoding="utf-8")
+        except Exception as fout:  # noqa: BLE001 - alles hoort als melding bij de client te komen
+            traceback.print_exc()
+            taak.status = "mislukt"
+            taak.foutmelding = str(fout)
+            taak.stap = "Mislukt"
 
 
 def _draai_video(taak: Taak) -> None:
@@ -973,6 +1064,8 @@ def _draai(taak: Taak) -> None:
             _draai_film(taak)
         elif taak.opdracht.soort == "video":
             _draai_video(taak)
+        elif taak.opdracht.soort == "beeld" and taak.opdracht.bron_beeld:
+            _draai_bewerk(taak)
         else:
             _draai_beeld(taak)
     finally:

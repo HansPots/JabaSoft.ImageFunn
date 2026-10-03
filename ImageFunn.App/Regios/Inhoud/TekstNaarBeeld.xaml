@@ -129,10 +129,11 @@
             </Grid>
         </Border>
 
-        <!-- Rechts: het beeld. -->
+        <!-- Rechts: het beeld en het bijsturen ervan. -->
         <Grid Grid.Row="1" Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
@@ -141,13 +142,80 @@
                     CornerRadius="{DynamicResource RadiusMedium}">
                 <Grid>
                     <Image x:Name="Resultaat" Stretch="Uniform" Margin="8" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <!-- Het tekenvlak om een gebied aan te wijzen: ligt precies over het beeld heen (zelfde marge) en is alleen
+                         actief als 'Gebied aanwijzen' aanstaat. Het rood is alleen voor jou; het masker wordt apart gemaakt. -->
+                    <InkCanvas x:Name="Tekenvlak" Margin="8" Background="Transparent" Visibility="Collapsed" Cursor="Pen" />
                     <TextBlock x:Name="LegeTekst" Text="Hier verschijnt je beeld"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
                 </Grid>
             </Border>
 
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Right">
+            <!-- Bijsturen: het getoonde beeld aanpassen, in plaats van opnieuw beginnen. -->
+            <Border x:Name="BijstuurKaart" Grid.Row="1" Margin="0,12,0,0" Visibility="Collapsed"
+                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="{DynamicResource RadiusMedium}" Padding="14,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Bijsturen - wat moet er anders aan dit beeld?" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,6" />
+
+                    <Border Grid.Row="1" Grid.Column="0" CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                            Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                        <TextBox x:Name="WijzigBox" Background="Transparent" BorderThickness="0" Padding="10,6" MinHeight="34"
+                                 VerticalContentAlignment="Center" AcceptsReturn="False"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 ToolTip="Bijvoorbeeld: de persoon iets groter, of een rode fiets tegen een boom op de achtergrond" />
+                    </Border>
+                    <Button Grid.Row="1" Grid.Column="1" x:Name="BijstuurButton" Content="Pas toe" Click="BijstuurButton_Click"
+                            Margin="10,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" x:Name="SterkteTekst" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="170"
+                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                                   Text="Hoeveel mag er veranderen: 40%" />
+                        <Slider Grid.Column="1" x:Name="SterkteSlider" Minimum="10" Maximum="95" Value="40" VerticalAlignment="Center"
+                                ValueChanged="SterkteSlider_ValueChanged"
+                                ToolTip="Laag: de indeling blijft bijna gelijk. Hoog: meer vrijheid, en nodig om een object toe te voegen." />
+
+                        <WrapPanel Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <CheckBox x:Name="GebiedBox" Content="Gebied aanwijzen" Margin="14,0,10,0" VerticalAlignment="Center"
+                                      Checked="GebiedBox_Changed" Unchecked="GebiedBox_Changed"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                                      ToolTip="Teken op het beeld waar iets moet veranderen. Alleen dat gebied wordt opnieuw gemaakt, de rest blijft zoals het is." />
+                            <StackPanel x:Name="PenseelPaneel" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
+                                <TextBlock Text="Penseel" VerticalAlignment="Center" Margin="0,0,6,0"
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                                <Slider x:Name="PenseelSlider" Minimum="10" Maximum="160" Value="60" Width="110" VerticalAlignment="Center"
+                                        ValueChanged="PenseelSlider_ValueChanged" />
+                                <CheckBox x:Name="GumBox" Content="Gum" Margin="12,0,0,0" VerticalAlignment="Center"
+                                          Checked="GumBox_Changed" Unchecked="GumBox_Changed"
+                                          Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                                <Button Content="Wis gebied" Click="WisGebied_Click" Margin="12,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+                            </StackPanel>
+                        </WrapPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Right">
                 <Button x:Name="OpslaanButton" Content="Opslaan als…" Click="OpslaanButton_Click" IsEnabled="False"
                         Style="{DynamicResource AccentButtonStyle}" />
                 <Button x:Name="AnimeerButton" Content="Animeer dit beeld" Click="AnimeerButton_Click" IsEnabled="False"

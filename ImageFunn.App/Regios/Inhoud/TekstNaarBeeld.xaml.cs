@@ -29,6 +29,9 @@ public partial class TekstNaarBeeld : UserControl
 
     private string? _huidigBestand;
 
+    /// <summary>De Engelse prompt waarmee het getoonde beeld gemaakt is, nodig om het bij te sturen.</summary>
+    private string? _huidigePrompt;
+
     private bool _galerijVullen;
 
     /// <summary>Gaat af als de gebruiker het gemaakte beeld wil laten beschrijven; het argument is het bestandspad.</summary>
@@ -121,7 +124,7 @@ public partial class TekstNaarBeeld : UserControl
 
                 if (status.IsKlaar && status.Bestand is { } bestand)
                 {
-                    Toon(bestand);
+                    Toon(bestand, beeldPrompt);
                     StatusText.Text = $"Klaar - seed {status.Seed}. Prompt: {beeldPrompt}";
                     await VulGalerijAsync();
                     break;
@@ -149,7 +152,7 @@ public partial class TekstNaarBeeld : UserControl
         }
     }
 
-    private void Toon(string bestand)
+    private void Toon(string bestand, string? prompt = null)
     {
         var beeld = Laad(bestand, null);
         if (beeld is null)
@@ -158,6 +161,9 @@ public partial class TekstNaarBeeld : UserControl
         }
 
         Resultaat.Source = beeld;
+        _huidigePrompt = prompt;
+        BijstuurKaart.Visibility = Visibility.Visible;
+        Tekenvlak.Strokes.Clear();
         LegeTekst.Visibility = Visibility.Collapsed;
         _huidigBestand = bestand;
         OpslaanButton.IsEnabled = true;
@@ -285,6 +291,8 @@ public partial class TekstNaarBeeld : UserControl
         if (_huidigBestand == beeld.Bestand)
         {
             _huidigBestand = null;
+            _huidigePrompt = null;
+            BijstuurKaart.Visibility = Visibility.Collapsed;
             Resultaat.Source = null;
             LegeTekst.Visibility = Visibility.Visible;
             OpslaanButton.IsEnabled = false;
@@ -303,7 +311,7 @@ public partial class TekstNaarBeeld : UserControl
             return;
         }
 
-        Toon(beeld.Bestand);
+        Toon(beeld.Bestand, beeld.Prompt);
         PromptBox.Text = beeld.Prompt;
     }
 

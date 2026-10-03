@@ -80,6 +80,14 @@ public sealed class BeeldOpdracht
     /// <summary>Hoe sterk een belangrijk voorwerp op zijn referentiebeeld moet lijken (0..1).</summary>
     [JsonPropertyName("voorwerp_sterkte")]
     public double VoorwerpSterkte { get; set; } = 0.35;
+
+    /// <summary>Bij bijsturen (soort "beeld" met <see cref="BronBeeld"/>): een zwart-wit masker, waarbij wit het gebied is dat mag veranderen. Leeg = het hele beeld.</summary>
+    [JsonPropertyName("masker")]
+    public string? Masker { get; set; }
+
+    /// <summary>Bij bijsturen: hoeveel er mag veranderen, 0,05 (bijna niets) tot 1 (alles).</summary>
+    [JsonPropertyName("sterkte")]
+    public double Sterkte { get; set; } = 0.5;
 }
 
 /// <summary>Een speler of plek in de cast van een film - spiegelt service.py's CastItem.</summary>

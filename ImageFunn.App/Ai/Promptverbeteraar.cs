@@ -18,6 +18,9 @@ public enum Promptsoort
     /// <summary>De beweging bij een bestaand beeld (beeld naar video).</summary>
     Beweging,
 
+    /// <summary>Een bestaande prompt aanpassen met een wijzigingsverzoek (bijsturen van een beeld).</summary>
+    Bewerk,
+
     /// <summary>Een hele scène met beweging (tekst naar video).</summary>
     Scene,
 }
@@ -31,6 +34,14 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
         "such as 'in front of' or 'behind'), and never drop or replace one. Put the main subjects first. " +
         "Then add concrete visual detail that fits the request: setting, lighting, mood, colours, composition and " +
         "Keep any style the user mentions (for example watercolour or photo), but do NOT invent a style of your own: the style is added separately. Do not add new subjects. " +
+        "Output ONLY the prompt: no quotes, no explanation, no line breaks.";
+
+    private const string BewerkInstructie =
+        "You edit a prompt for a text-to-image model. The user gives the ORIGINAL English prompt of an existing image and a " +
+        "CHANGE REQUEST in any language (for example: make the person a bit bigger, or add a red bicycle in the background). " +
+        "Return the complete UPDATED English prompt, ONE flowing paragraph of at most 90 words, with the change applied and " +
+        "everything else kept as it was (subjects, style words, lighting, setting). Describe the change concretely: for a " +
+        "larger person write that the person fills more of the frame, closer to the camera; for an object name it and say where it is. " +
         "Output ONLY the prompt: no quotes, no explanation, no line breaks.";
 
     private const string SceneInstructie =
@@ -74,10 +85,10 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
                 instelling.Settings.Provider,
                 instelling.Settings.ActiveServerUrl,
                 model,
-                [new ChatMessage("system", soort switch { Promptsoort.Beweging => BewegingInstructie, Promptsoort.Scene => SceneInstructie, _ => Instructie }), new ChatMessage("user", omschrijving)],
+                [new ChatMessage("system", soort switch { Promptsoort.Beweging => BewegingInstructie, Promptsoort.Bewerk => BewerkInstructie, Promptsoort.Scene => SceneInstructie, _ => Instructie }), new ChatMessage("user", omschrijving)],
                 "ImageFunn",
                 Temperature: 0.4,
-                Onderdeel: soort switch { Promptsoort.Beweging => "Beeld naar video (prompt)", Promptsoort.Scene => "Tekst naar video (prompt)", _ => "Tekst naar beeld (prompt)" }),
+                Onderdeel: soort switch { Promptsoort.Beweging => "Beeld naar video (prompt)", Promptsoort.Bewerk => "Beeld bijsturen (prompt)", Promptsoort.Scene => "Tekst naar video (prompt)", _ => "Tekst naar beeld (prompt)" }),
             limiet.Token).ConfigureAwait(false);
 
         if (!resultaat.Success)
