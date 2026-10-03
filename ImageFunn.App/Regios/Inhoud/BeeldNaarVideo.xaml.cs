@@ -214,8 +214,8 @@ public partial class BeeldNaarVideo : UserControl
                 var tekst = taak.Prompt.Length > 40 ? taak.Prompt[..40] + "…" : taak.Prompt;
                 Galerij.Items.Add(new ListBoxItem
                 {
-                    Content = $"{taak.GemaaktOp.LocalDateTime:dd-MM HH:mm}  {tekst}",
-                    Tag = taak.Bestand,
+                    Content = GalerijPrullenbak.MaakRegel($"{taak.GemaaktOp.LocalDateTime:dd-MM HH:mm}  {tekst}", () => VerwijderVideoAsync(taak)),
+                    Tag = taak,
                     ToolTip = taak.Prompt,
                     Margin = new Thickness(0, 0, 8, 0),
                 });
@@ -233,10 +233,43 @@ public partial class BeeldNaarVideo : UserControl
 
     private void Galerij_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!_galerijVullen && Galerij.SelectedItem is ListBoxItem { Tag: string bestand })
+        if (!_galerijVullen && Galerij.SelectedItem is ListBoxItem { Tag: BeeldJobStatus { Bestand: { } bestand } })
         {
             Speel(bestand);
         }
+    }
+
+    /// <summary>Verwijdert een eerder gemaakte video met zijn map. De speler houdt het bestand open, dus die laten we eerst los.</summary>
+    private async Task VerwijderVideoAsync(BeeldJobStatus taak)
+    {
+        if (!GalerijPrullenbak.Bevestig("video", taak.Prompt))
+        {
+            return;
+        }
+
+        if (GalerijPrullenbak.ZitIn(_huidigeVideo, Path.GetDirectoryName(taak.Bestand)))
+        {
+            Speler.Stop();
+            Speler.Close();
+            Speler.Source = null;
+            _huidigeVideo = null;
+            LegeTekst.Visibility = Visibility.Visible;
+            OpslaanButton.IsEnabled = false;
+            await Task.Delay(300);
+        }
+
+        try
+        {
+            await _service.DeleteJobAsync(taak.JobId);
+        }
+        catch (Exception fout)
+        {
+            StatusText.Text = $"Verwijderen mislukt: {fout.Message}";
+            return;
+        }
+
+        await VulGalerijAsync();
+        StatusText.Text = "Video verwijderd.";
     }
 
     private void OpslaanButton_Click(object sender, RoutedEventArgs e)

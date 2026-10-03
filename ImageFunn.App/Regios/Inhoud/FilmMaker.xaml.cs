@@ -930,7 +930,7 @@ public partial class FilmMaker : UserControl
                 var tekst = taak.Prompt.Length > 40 ? taak.Prompt[..40] + "…" : taak.Prompt;
                 Galerij.Items.Add(new ListBoxItem
                 {
-                    Content = $"{taak.GemaaktOp.LocalDateTime:dd-MM HH:mm}  {taak.Scenes.Count} scènes  {tekst}",
+                    Content = GalerijPrullenbak.MaakRegel($"{taak.GemaaktOp.LocalDateTime:dd-MM HH:mm}  {taak.Scenes.Count} scènes  {tekst}", () => VerwijderFilmAsync(taak)),
                     Tag = taak,
                     ToolTip = taak.Prompt,
                     Margin = new Thickness(0, 0, 8, 0),
@@ -945,6 +945,75 @@ public partial class FilmMaker : UserControl
         {
             _galerijVullen = false;
         }
+    }
+
+    /// <summary>
+    /// Verwijdert een eerder gemaakte film met zijn hele map: de film, alle scènes en de sleutelbeelden. Scènes op de
+    /// tijdlijn die naar die bestanden wezen worden weer "nog te maken", en wat er nu speelt gaat eerst uit omdat de
+    /// speler het bestand open houdt.
+    /// </summary>
+    private async Task VerwijderFilmAsync(BeeldJobStatus taak)
+    {
+        if (_bezig)
+        {
+            StatusText.Text = "Wacht tot het maken klaar is voor je een film verwijdert.";
+            return;
+        }
+
+        if (!GalerijPrullenbak.Bevestig("film", taak.Prompt, "De film en alle bijbehorende scènes en sleutelbeelden worden verwijderd."))
+        {
+            return;
+        }
+
+        var map = System.IO.Path.GetDirectoryName(taak.Bestand);
+
+        if (GalerijPrullenbak.ZitIn(_spelerBestand, map))
+        {
+            Speler.Stop();
+            Speler.Close();
+            Speler.Source = null;
+            _spelerBestand = null;
+            _afspeellijst = false;
+            LegeTekst.Visibility = Visibility.Visible;
+            SleutelBeeld.Visibility = Visibility.Collapsed;
+            SleutelLabel.Visibility = Visibility.Collapsed;
+            await Task.Delay(300);
+        }
+
+        if (GalerijPrullenbak.ZitIn(_filmBestand, map))
+        {
+            _filmBestand = null;
+            ToonFilmButton.IsEnabled = false;
+            OpslaanButton.IsEnabled = false;
+        }
+
+        try
+        {
+            await _service.DeleteJobAsync(taak.JobId);
+        }
+        catch (Exception fout)
+        {
+            StatusText.Text = $"Verwijderen mislukt: {fout.Message}";
+            return;
+        }
+
+        foreach (var scene in _scenes)
+        {
+            if (GalerijPrullenbak.ZitIn(scene.Bestand, map))
+            {
+                scene.Bestand = null;
+                scene.Status = "wachtend";
+            }
+
+            if (GalerijPrullenbak.ZitIn(scene.Sleutel, map))
+            {
+                scene.Sleutel = null;
+            }
+        }
+
+        Teken();
+        await VulGalerijAsync();
+        StatusText.Text = "Film verwijderd.";
     }
 
     /// <summary>Een eerder gemaakte film openen: de film speelt en de scènes komen terug op de tijdlijn.</summary>
