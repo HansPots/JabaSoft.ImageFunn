@@ -36,6 +36,15 @@ public partial class MainWindow : Window
     /// <summary>Het scherm waar uit tekst een beeld gemaakt wordt.</summary>
     private readonly InhoudSchermen.TekstNaarBeeld _tekstNaarBeeld;
 
+    /// <summary>Het scherm waar een beeld tot een korte video geanimeerd wordt.</summary>
+    private readonly InhoudSchermen.BeeldNaarVideo _beeldNaarVideo;
+
+    /// <summary>Het scherm waar uit tekst direct een video gemaakt wordt.</summary>
+    private readonly InhoudSchermen.TekstNaarVideo _tekstNaarVideo;
+
+    /// <summary>Het scherm waar een langere film uit scènes op een tijdlijn gemaakt wordt.</summary>
+    private readonly InhoudSchermen.FilmMaker _filmMaker;
+
     /// <summary>De bewaking van deze app. Eén per applicatie: de pil in de footer kijkt hiernaar.</summary>
     private HealthMonitor? _monitor;
 
@@ -50,6 +59,14 @@ public partial class MainWindow : Window
 
         _beeldNaarTekst = new InhoudSchermen.BeeldNaarTekst(_broker);
         _tekstNaarBeeld = new InhoudSchermen.TekstNaarBeeld(_broker);
+        _beeldNaarVideo = new InhoudSchermen.BeeldNaarVideo(_broker);
+        _tekstNaarVideo = new InhoudSchermen.TekstNaarVideo(_broker);
+        _filmMaker = new InhoudSchermen.FilmMaker(_broker);
+        _tekstNaarBeeld.AnimatieDoorgeven += (_, pad) =>
+        {
+            _beeldNaarVideo.ZetBron(pad);
+            ShowContent(NavigatiemenuItem.BeeldNaarVideo);
+        };
 
         // De twee schermen kunnen elkaar iets doorgeven: een gelezen prompt
         // wordt een nieuw beeld, een gemaakt beeld wordt opnieuw beschreven.
@@ -181,6 +198,9 @@ public partial class MainWindow : Window
         {
             NavigatiemenuItem.BeeldNaarTekst => _beeldNaarTekst,
             NavigatiemenuItem.TekstNaarBeeld => _tekstNaarBeeld,
+            NavigatiemenuItem.BeeldNaarVideo => _beeldNaarVideo,
+            NavigatiemenuItem.TekstNaarVideo => _tekstNaarVideo,
+            NavigatiemenuItem.FilmMaken => _filmMaker,
             _ => _startscherm,
         };
 

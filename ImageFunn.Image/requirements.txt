@@ -15,3 +15,5 @@ bitsandbytes
 fastapi
 uvicorn
 pillow
+imageio
+imageio-ffmpeg

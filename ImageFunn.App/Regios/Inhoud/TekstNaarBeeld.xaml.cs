@@ -1,6 +1,9 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Media.Imaging;
 using ImageFunn.App.Ai;
 using ImageFunn.App.ImageService;
@@ -30,6 +33,9 @@ public partial class TekstNaarBeeld : UserControl
 
     /// <summary>Gaat af als de gebruiker het gemaakte beeld wil laten beschrijven; het argument is het bestandspad.</summary>
     public event EventHandler<string>? BeeldDoorgeven;
+
+    /// <summary>Gaat af als de gebruiker het gemaakte beeld wil laten bewegen; het argument is het bestandspad.</summary>
+    public event EventHandler<string>? AnimatieDoorgeven;
 
     private readonly Promptverbeteraar _verbeteraar;
 
@@ -94,8 +100,13 @@ public partial class TekstNaarBeeld : UserControl
                 }
             }
 
+            // De gekozen stijl komt vóór de prompt, en hoort bij een eigen negatieve prompt (bijvoorbeeld "geen tekening" bij realistisch).
+            var stijl = Beeldstijl.Van((string)((ComboBoxItem)StijlKeuze.SelectedItem).Tag);
+            beeldPrompt = stijl.MetStijl(beeldPrompt);
+
             var jobId = await _service.StartJobAsync(new BeeldOpdracht
             {
+                Negatief = stijl.Negatief,
                 Prompt = beeldPrompt,
                 Breedte = int.Parse(formaat[0]),
                 Hoogte = int.Parse(formaat[1]),
@@ -151,6 +162,7 @@ public partial class TekstNaarBeeld : UserControl
         _huidigBestand = bestand;
         OpslaanButton.IsEnabled = true;
         NaarTekstButton.IsEnabled = true;
+        AnimeerButton.IsEnabled = true;
     }
 
     /// <summary>Laadt een bestand zonder het vast te houden; decodeBreedte houdt miniaturen klein in het geheugen.</summary>
@@ -192,14 +204,7 @@ public partial class TekstNaarBeeld : UserControl
                     continue;
                 }
 
-                Galerij.Items.Add(new Image
-                {
-                    Source = miniatuur,
-                    Height = 100,
-                    Margin = new Thickness(0, 0, 8, 0),
-                    Tag = taak.Bestand,
-                    ToolTip = taak.Prompt,
-                });
+                Galerij.Items.Add(MaakGalerijItem(new GalerijBeeld(taak.JobId, taak.Bestand!, taak.Prompt), miniatuur));
             }
         }
         catch (Exception)
@@ -212,18 +217,103 @@ public partial class TekstNaarBeeld : UserControl
         }
     }
 
-    private void Galerij_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    /// <summary>Wat er bij een beeld in de galerij hoort: de opdracht (om te verwijderen), het bestand en de omschrijving.</summary>
+    private sealed record GalerijBeeld(string JobId, string Bestand, string Prompt);
+
+    /// <summary>
+    /// Een beeld in de galerij: de miniatuur met rechtsboven een prullenbak. De prullenbak verschijnt als je met de muis
+    /// boven het beeld hangt, zodat de galerij rustig blijft.
+    /// </summary>
+    private Grid MaakGalerijItem(GalerijBeeld beeld, ImageSource miniatuur)
     {
-        if (_galerijVullen || Galerij.SelectedItem is not Image { Tag: string bestand })
+        var prullenbak = new Button
+        {
+            Width = 28,
+            Height = 28,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 4, 4, 0),
+            Cursor = Cursors.Hand,
+            Visibility = Visibility.Collapsed,
+            ToolTip = "Dit beeld verwijderen",
+            Padding = new Thickness(0),
+            Content = new System.Windows.Shapes.Path
+            {
+                // Het prullenbakpictogram (Material Design).
+                Data = Geometry.Parse("M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"),
+                Stretch = Stretch.Uniform,
+                Width = 14,
+                Height = 14,
+            },
+        };
+        ((System.Windows.Shapes.Path)prullenbak.Content).SetResourceReference(Shape.FillProperty, "Text01Brush");
+        prullenbak.SetResourceReference(BackgroundProperty, "BackgroundBrush");
+        prullenbak.Click += async (_, e) =>
+        {
+            e.Handled = true; // niet ook het beeld selecteren
+            await VerwijderBeeldAsync(beeld);
+        };
+
+        var raster = new Grid { Margin = new Thickness(0, 0, 8, 0), Tag = beeld, ToolTip = beeld.Prompt };
+        raster.Children.Add(new Image { Source = miniatuur, Height = 100 });
+        raster.Children.Add(prullenbak);
+        raster.MouseEnter += (_, _) => prullenbak.Visibility = Visibility.Visible;
+        raster.MouseLeave += (_, _) => prullenbak.Visibility = Visibility.Collapsed;
+        return raster;
+    }
+
+    private async Task VerwijderBeeldAsync(GalerijBeeld beeld)
+    {
+        var korteTekst = beeld.Prompt.Length > 80 ? beeld.Prompt[..80] + "…" : beeld.Prompt;
+        if (MessageBox.Show($"Dit beeld definitief verwijderen?\n\n{korteTekst}\n\nDit kan niet ongedaan gemaakt worden.", "ImageFunn",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
         {
             return;
         }
 
-        Toon(bestand);
-
-        if (Galerij.SelectedItem is Image { ToolTip: string prompt })
+        try
         {
-            PromptBox.Text = prompt;
+            await _service.DeleteJobAsync(beeld.JobId);
+        }
+        catch (Exception fout)
+        {
+            StatusText.Text = $"Verwijderen mislukt: {fout.Message}";
+            return;
+        }
+
+        // Stond dit beeld net groot in beeld, dan ook daar weghalen.
+        if (_huidigBestand == beeld.Bestand)
+        {
+            _huidigBestand = null;
+            Resultaat.Source = null;
+            LegeTekst.Visibility = Visibility.Visible;
+            OpslaanButton.IsEnabled = false;
+            NaarTekstButton.IsEnabled = false;
+            AnimeerButton.IsEnabled = false;
+        }
+
+        await VulGalerijAsync();
+        StatusText.Text = "Beeld verwijderd.";
+    }
+
+    private void Galerij_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_galerijVullen || Galerij.SelectedItem is not Grid { Tag: GalerijBeeld beeld })
+        {
+            return;
+        }
+
+        Toon(beeld.Bestand);
+        PromptBox.Text = beeld.Prompt;
+    }
+
+    /// <summary>De Delete-toets verwijdert het geselecteerde beeld uit de galerij.</summary>
+    private async void Galerij_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Delete && Galerij.SelectedItem is Grid { Tag: GalerijBeeld beeld })
+        {
+            e.Handled = true;
+            await VerwijderBeeldAsync(beeld);
         }
     }
 
@@ -239,6 +329,14 @@ public partial class TekstNaarBeeld : UserControl
         {
             File.Copy(_huidigBestand, dialoog.FileName, overwrite: true);
             StatusText.Text = $"Opgeslagen: {dialoog.FileName}";
+        }
+    }
+
+    private void AnimeerButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_huidigBestand is not null)
+        {
+            AnimatieDoorgeven?.Invoke(this, _huidigBestand);
         }
     }
 

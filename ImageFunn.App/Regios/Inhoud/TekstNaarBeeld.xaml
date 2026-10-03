@@ -72,12 +72,26 @@
 
                 <TextBlock Grid.Row="2" Text="Formaat" Foreground="{DynamicResource TextMutedBrush}"
                            FontSize="{DynamicResource FontSizeSmall}" Margin="0,14,0,6" />
-                <ComboBox Grid.Row="3" x:Name="FormaatKeuze" SelectedIndex="0">
-                    <ComboBoxItem Content="Vierkant 1024 × 1024" Tag="1024x1024" />
-                    <ComboBoxItem Content="Liggend 1344 × 768" Tag="1344x768" />
-                    <ComboBoxItem Content="Staand 768 × 1344" Tag="768x1344" />
-                    <ComboBoxItem Content="Klein vierkant 768 × 768 (sneller)" Tag="768x768" />
-                </ComboBox>
+                <Grid Grid.Row="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="FormaatKeuze" SelectedIndex="0">
+                        <ComboBoxItem Content="Vierkant 1024 × 1024" Tag="1024x1024" />
+                        <ComboBoxItem Content="Liggend 1344 × 768" Tag="1344x768" />
+                        <ComboBoxItem Content="Staand 768 × 1344" Tag="768x1344" />
+                        <ComboBoxItem Content="Klein vierkant 768 × 768 (sneller)" Tag="768x768" />
+                    </ComboBox>
+                    <ComboBox Grid.Column="2" x:Name="StijlKeuze" SelectedIndex="0" ToolTip="Hoe het beeld eruitziet">
+                        <ComboBoxItem Content="Realistisch (foto)" Tag="realistisch" />
+                        <ComboBoxItem Content="Filmisch" Tag="filmisch" />
+                        <ComboBoxItem Content="Illustratie" Tag="illustratie" />
+                        <ComboBoxItem Content="Tekenfilm / animatie" Tag="tekenfilm" />
+                        <ComboBoxItem Content="Geen (alleen mijn tekst)" Tag="geen" />
+                    </ComboBox>
+                </Grid>
 
                 <CheckBox Grid.Row="4" x:Name="VerbeterBox" IsChecked="True" Margin="0,14,0,0"
                           Content="Prompt automatisch vertalen en verbeteren (aanbevolen)"
@@ -136,6 +150,8 @@
             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Right">
                 <Button x:Name="OpslaanButton" Content="Opslaan als…" Click="OpslaanButton_Click" IsEnabled="False"
                         Style="{DynamicResource AccentButtonStyle}" />
+                <Button x:Name="AnimeerButton" Content="Animeer dit beeld" Click="AnimeerButton_Click" IsEnabled="False"
+                        Margin="0,0,10,0" Style="{DynamicResource AccentButtonStyle}" />
                 <Button x:Name="NaarTekstButton" Content="Laat dit beeld beschrijven" Click="NaarTekstButton_Click" IsEnabled="False"
                         Margin="10,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
             </StackPanel>
@@ -145,7 +161,7 @@
         <ListBox Grid.Row="2" Grid.ColumnSpan="3" x:Name="Galerij" Margin="0,16,0,0" Height="116"
                  Background="Transparent" BorderThickness="0"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                 SelectionChanged="Galerij_SelectionChanged">
+                 SelectionChanged="Galerij_SelectionChanged" KeyDown="Galerij_KeyDown">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />

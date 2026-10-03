@@ -4,3 +4,5 @@ uitvoer/
 service.log
 install.log
 download.log
+modellen/
+*.log

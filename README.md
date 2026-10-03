@@ -6,7 +6,10 @@ als AI Studio en Tab Studio. Twee kanten:
 - **Beeld naar tekst** - een afbeelding laten beschrijven, uitlezen (OCR) of omzetten naar
   een prompt. Loopt via de AI-broker met het in Jabasoft ingestelde beeldmodel (Ollama/LM Studio).
 - **Tekst naar beeld** - een beeld genereren uit een omschrijving. Loopt via de lokale
-  Python-service in `ImageFunn.Image` (FLUX.1-schnell in 4-bit, past op 12 GB VRAM).
+  Python-service in `ImageFunn.Image`. Standaard **JuggernautXL Ragnarok** (zeer fotorealistisch, een
+  SDXL-model). Het GGUF-bestand wordt gevonden in de modelmap van LM Studio en de eerste keer omgezet
+  (±1 minuut, daarna 5 GB gecachet in `ImageFunn.Image/modellen`). Ander model? Zet `IMAGEFUNN_MODEL`
+  op `sdxl` (het gewone SDXL-basismodel) of `flux`.
 
 ## Starten
 

@@ -14,6 +14,15 @@ public enum NavigatiemenuItem
 
     /// <summary>Een afbeelding genereren uit een omschrijving.</summary>
     TekstNaarBeeld,
+
+    /// <summary>Een gemaakt beeld laten bewegen tot een korte video.</summary>
+    BeeldNaarVideo,
+
+    /// <summary>Een video maken uit alleen een omschrijving.</summary>
+    TekstNaarVideo,
+
+    /// <summary>Een langere film maken uit scènes op een tijdlijn.</summary>
+    FilmMaken,
 }
 
 /// <summary>
@@ -78,6 +87,9 @@ public partial class Navigatiemenu : UserControl
         Zet(HomeButton, false);
         Zet(BeeldNaarTekstButton, _actief == NavigatiemenuItem.BeeldNaarTekst);
         Zet(TekstNaarBeeldButton, _actief == NavigatiemenuItem.TekstNaarBeeld);
+        Zet(BeeldNaarVideoButton, _actief == NavigatiemenuItem.BeeldNaarVideo);
+        Zet(TekstNaarVideoButton, _actief == NavigatiemenuItem.TekstNaarVideo);
+        Zet(FilmButton, _actief == NavigatiemenuItem.FilmMaken);
     }
 
     private static void Zet(Button knop, bool actief)
@@ -93,6 +105,9 @@ public partial class Navigatiemenu : UserControl
         {
             _ when ReferenceEquals(sender, BeeldNaarTekstButton) => NavigatiemenuItem.BeeldNaarTekst,
             _ when ReferenceEquals(sender, TekstNaarBeeldButton) => NavigatiemenuItem.TekstNaarBeeld,
+            _ when ReferenceEquals(sender, BeeldNaarVideoButton) => NavigatiemenuItem.BeeldNaarVideo,
+            _ when ReferenceEquals(sender, TekstNaarVideoButton) => NavigatiemenuItem.TekstNaarVideo,
+            _ when ReferenceEquals(sender, FilmButton) => NavigatiemenuItem.FilmMaken,
             _ => NavigatiemenuItem.Home,
         };
 

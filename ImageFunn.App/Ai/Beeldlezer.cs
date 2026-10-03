@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text;
 using Jabasoft.Base.AiBroker;
 using Jabasoft.Base.Logging;
 
@@ -106,12 +105,8 @@ public sealed class Beeldlezer(IAiBrokerClient broker)
         using var limiet = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         limiet.CancelAfter(Limiet);
 
-        // Streaming en niet ChatAsync: alleen de streaming-route van de broker stuurt
-        // afbeeldingen aan het model mee (zie Jabasoft.Broker/ProviderStream).
-        var antwoord = new StringBuilder();
-        string? fout = null;
-
-        await foreach (var stukje in broker.ChatStreamAsync(
+        // Altijd via de streaming-route (de enige die afbeeldingen aan het model meegeeft), met de teller erbij.
+        var resultaat = await broker.ChatMetTellerAsync(
             new ChatRequest(
                 instelling.Provider,
                 instelling.ActiveServerUrl,
@@ -120,28 +115,10 @@ public sealed class Beeldlezer(IAiBrokerClient broker)
                 Applicatie,
                 Temperature: doel == Leesdoel.TekstUitlezen ? 0.0 : 0.3,
                 Onderdeel: $"Beeld naar tekst ({doel})"),
-            limiet.Token).ConfigureAwait(false))
-        {
-            if (stukje.ErrorMessage is not null)
-            {
-                fout = stukje.ErrorMessage;
-                break;
-            }
+            limiet.Token).ConfigureAwait(false);
 
-            if (!string.IsNullOrEmpty(stukje.Text))
-            {
-                antwoord.Append(stukje.Text);
-            }
-        }
-
-        if (fout is not null)
-        {
-            return (null, fout, model);
-        }
-
-        var tekst = antwoord.ToString().Trim();
-        return tekst.Length == 0
-            ? (null, "Het model gaf geen antwoord.", model)
-            : (tekst, null, model);
+        return resultaat.Success
+            ? (resultaat.Reply, null, model)
+            : (null, resultaat.ErrorMessage ?? "Het model gaf geen antwoord.", model);
     }
 }

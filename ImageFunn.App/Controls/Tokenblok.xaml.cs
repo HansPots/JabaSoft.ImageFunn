@@ -33,17 +33,43 @@ public partial class Tokenblok : UserControl
 
         _timer.Tick += async (_, _) => await VerversAsync();
 
+        // De lopende teller komt van TokenTicker, niet van de broker: die weet pas iets als de aanroep KLAAR is.
+        // Aankoppelen bij Loaded en loskoppelen bij Unloaded: TokenTicker is statisch, en een blok dat blijft
+        // luisteren terwijl het weg is blijft daardoor ook in het geheugen hangen.
         Loaded += async (_, _) =>
         {
             _timer.Interval = TimeSpan.FromSeconds(ReadIntervalSeconds());
             _timer.Start();
+            TokenTicker.Changed -= OnTickerChanged;
+            TokenTicker.Changed += OnTickerChanged;
             await VerversAsync();
         };
 
         // Uit als het blok niet in beeld is: dan hoeft er ook niets
         // opgehaald te worden.
-        Unloaded += (_, _) => _timer.Stop();
+        Unloaded += (_, _) =>
+        {
+            _timer.Stop();
+            TokenTicker.Changed -= OnTickerChanged;
+        };
     }
+
+    /// <summary>
+    /// De teller is opgelopen, gestart of gestopt. Komt van de draad waar het antwoord binnenkomt, dus via de
+    /// Dispatcher naar het scherm. Zodra het klaar is wordt meteen bij de broker nagevraagd wat het werkelijk
+    /// geworden is, zodat het grote getal er direct achteraan springt.
+    /// </summary>
+    private void OnTickerChanged(object? afzender, EventArgs e) => Dispatcher.BeginInvoke(async () =>
+    {
+        if (TokenTicker.Running)
+        {
+            LopendText.Text = $"+{TokenTicker.Tokens:N0}";
+            return;
+        }
+
+        LopendText.Text = string.Empty;
+        await VerversAsync();
+    });
 
     private async Task VerversAsync()
     {

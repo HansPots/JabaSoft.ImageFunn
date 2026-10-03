@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
+using Jabasoft.Base;
+using Jabasoft.Base.Logging;
 
 namespace ImageFunn.App.ImageService;
 
@@ -30,9 +33,18 @@ public static class ImageServiceLauncher
         CancellationToken cancellationToken = default)
     {
         using var probeClient = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
-        if (await IsHealthyAsync(probeClient, baseUrl).ConfigureAwait(false))
+        var (gezond, versie) = await LeesGezondheidAsync(probeClient, baseUrl).ConfigureAwait(false);
+        if (gezond)
         {
-            return;
+            // Een draaiende service is niet automatisch de goede: hij kan van een eerdere sessie zijn, met oude code.
+            // Meldt hij niet dezelfde versie als het bestand op schijf (of helemaal geen), dan stoppen we hem en starten we hem opnieuw.
+            if (versie == HuidigeVersie())
+            {
+                return;
+            }
+
+            ActivityLog.Shared.Add("app", "De beeldservice draait met oude code - opnieuw starten.");
+            FamilieServices.StopPoort(new Uri(baseUrl).Port);
         }
 
         var pythonExe = Path.Combine(ProjectPath, ".venv", "Scripts", "python.exe");
@@ -104,6 +116,33 @@ public static class ImageServiceLauncher
         {
             _gestartProces.Dispose();
             _gestartProces = null;
+        }
+    }
+
+    /// <summary>De versie van service.py op schijf: tijdstip van de laatste wijziging, in seconden (zoals service.py hem zelf meldt).</summary>
+    private static long HuidigeVersie()
+    {
+        var pad = Path.Combine(ProjectPath, "service.py");
+        return File.Exists(pad) ? new DateTimeOffset(File.GetLastWriteTimeUtc(pad)).ToUnixTimeSeconds() : -1;
+    }
+
+    /// <summary>Is de service bereikbaar, en welke versie van de code draait hij (null als hij dat niet meldt)?</summary>
+    private static async Task<(bool Gezond, long? Versie)> LeesGezondheidAsync(HttpClient client, string baseUrl)
+    {
+        try
+        {
+            using var response = await client.GetAsync($"{baseUrl.TrimEnd('/')}/health").ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (false, null);
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+            return (true, document.RootElement.TryGetProperty("versie", out var versie) && versie.TryGetInt64(out var waarde) ? waarde : null);
+        }
+        catch
+        {
+            return (false, null);
         }
     }
 

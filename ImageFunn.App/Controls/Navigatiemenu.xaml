@@ -159,6 +159,105 @@
                     </Button.Template>
                 </Button>
 
+                <!-- Beeld naar video: een beeld laten bewegen. -->
+                <Button x:Name="BeeldNaarVideoButton" Content="Beeld naar video" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M18 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h13c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Tekst naar video: een scène omschrijven en er een video van laten maken. -->
+                <Button x:Name="TekstNaarVideoButton" Content="Tekst naar video" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M4 6h2v2H4V6zm0 5h2v2H4v-2zm0 5h2v2H4v-2zM18 6h2v2h-2V6zm0 5h2v2h-2v-2zm0 5h2v2h-2v-2zM8 5h8v14H8V5zm2.5 3.5v7l4.5-3.5-4.5-3.5z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Film maken: een verhaal op een tijdlijn zetten en er een langere film van laten maken. -->
+                <Button x:Name="FilmButton" Content="Film maken" Click="MenuItem_Click" Foreground="{DynamicResource AccentForegroundBrush}" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="0" FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" HorizontalContentAlignment="Left"
+                        theming:MarginParts.Bottom="{DynamicResource SpaceSmall}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    theming:CornerRadiusParts.TopLeft="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.TopRight="{DynamicResource RadiusXLarge}"
+                                    theming:CornerRadiusParts.BottomRight="{DynamicResource RadiusXLarge}"
+                                    theming:PaddingParts.Left="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Top="{DynamicResource SpaceSmall}"
+                                    theming:PaddingParts.Right="{DynamicResource SpaceMedium}"
+                                    theming:PaddingParts.Bottom="{DynamicResource SpaceSmall}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z" Fill="{DynamicResource Text01Brush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"
+                                          theming:MarginParts.Right="{DynamicResource SpaceSmall}" />
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrushDark}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
             </StackPanel>
 
             <!-- Onderkant van het menu: blijft altijd onderaan staan, ook als

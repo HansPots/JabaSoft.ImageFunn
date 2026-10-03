@@ -1,0 +1,529 @@
+<UserControl x:Class="ImageFunn.App.Regios.Inhoud.FilmMaker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="1616" d:DesignHeight="846">
+
+    <!-- Design-time-only: zie BeeldNaarTekst.xaml. -->
+    <d:UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Theme.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Stylebook.Components;component/Styles/Themes/Lcars.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </d:UserControl.Resources>
+
+    <!--
+        Inhoud-regio component: het scherm waar "Film maken" in het menu naartoe schakelt.
+
+        Het werk staat in de volgorde waarin je het instelt, als vijf tabs bovenin:
+          1 Verhaal   - lengte, formaat, stijl en het verhaalidee
+          2 Scènes    - de scènes op de tijdlijn aanpassen
+          3 Cast      - personages, plekken en belangrijke voorwerpen met een eigen referentiebeeld (optioneel)
+          4 Beelden   - de sleutelbeelden controleren voordat er geanimeerd wordt
+          5 Film      - animeren, voortgang, afspelen
+        De tijdlijn onderaan blijft op elke tab staan, want die laat zien waar je bent in het verhaal.
+
+        Een tab is een gewoon Grid dat getoond of verborgen wordt (zie FilmMaker.Tabs.cs); alle elementen
+        houden hun eigen naam, dus de rest van de code werkt er onveranderd mee.
+    -->
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Titel en de stappen. -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Film maken" FontSize="{DynamicResource FontSizeTitle}" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Border x:Name="StapRand0" BorderThickness="0,0,0,4" Margin="8,0,0,0"><Button x:Name="StapKnop0" Content="1  Verhaal" Tag="0" Click="Stap_Click" Style="{DynamicResource AccentButtonStyle}" /></Border>
+                <Border x:Name="StapRand1" BorderThickness="0,0,0,4" Margin="8,0,0,0"><Button x:Name="StapKnop1" Content="2  Scènes" Tag="1" Click="Stap_Click" Style="{DynamicResource AccentButtonStyle}" /></Border>
+                <Border x:Name="StapRand2" BorderThickness="0,0,0,4" Margin="8,0,0,0"><Button x:Name="StapKnop2" Content="3  Cast (optioneel)" Tag="2" Click="Stap_Click" Style="{DynamicResource AccentButtonStyle}" /></Border>
+                <Border x:Name="StapRand3" BorderThickness="0,0,0,4" Margin="8,0,0,0"><Button x:Name="StapKnop3" Content="4  Beelden" Tag="3" Click="Stap_Click" Style="{DynamicResource AccentButtonStyle}" /></Border>
+                <Border x:Name="StapRand4" BorderThickness="0,0,0,4" Margin="8,0,0,0"><Button x:Name="StapKnop4" Content="5  Film" Tag="4" Click="Stap_Click" Style="{DynamicResource AccentButtonStyle}" /></Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- De tabs. -->
+        <Grid Grid.Row="1">
+
+            <!-- ============================================================ 1  VERHAAL -->
+            <Grid x:Name="TabVerhaal">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="520" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="Hoe lang en hoe ziet het eruit?" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,10" />
+
+                            <TextBlock Text="Lengte" Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,6" />
+                            <ComboBox x:Name="LengteKeuze" SelectedIndex="1">
+                                <ComboBoxItem Content="Ongeveer 30 sec" Tag="30" />
+                                <ComboBoxItem Content="Ongeveer 1 min" Tag="60" />
+                                <ComboBoxItem Content="Ongeveer 2 min" Tag="120" />
+                                <ComboBoxItem Content="Ongeveer 3 min" Tag="180" />
+                            </ComboBox>
+
+                            <TextBlock Text="Formaat" Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,14,0,6" />
+                            <ComboBox x:Name="FormaatKeuze" SelectedIndex="0">
+                                <ComboBoxItem Content="Liggend 704 × 480" Tag="704x480" />
+                                <ComboBoxItem Content="Staand 480 × 704" Tag="480x704" />
+                                <ComboBoxItem Content="Vierkant 544 × 544" Tag="544x544" />
+                                <ComboBoxItem Content="Snel 512 × 352" Tag="512x352" />
+                            </ComboBox>
+
+                            <TextBlock Text="Beeldstijl" Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,14,0,6" />
+                            <ComboBox x:Name="BeeldstijlKeuze" SelectedIndex="0" SelectionChanged="BeeldstijlKeuze_SelectionChanged"
+                                      ToolTip="Hoe de beelden eruitzien. Realistisch vraagt het model nadrukkelijk om géén tekening of illustratie.">
+                                <ComboBoxItem Content="Realistisch (foto)" Tag="realistisch" />
+                                <ComboBoxItem Content="Filmisch" Tag="filmisch" />
+                                <ComboBoxItem Content="Illustratie" Tag="illustratie" />
+                                <ComboBoxItem Content="Tekenfilm / animatie" Tag="tekenfilm" />
+                                <ComboBoxItem Content="Geen (alleen mijn tekst)" Tag="geen" />
+                            </ComboBox>
+
+                            <Rectangle Height="1" Fill="{DynamicResource BorderBrush}" Margin="0,18,0,14" />
+                            <TextBlock Text="Opbouw" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,10" />
+                            <ComboBox x:Name="ModusKeuze" SelectedIndex="0" ToolTip="Hoe de scènes op elkaar aansluiten">
+                                <ComboBoxItem Content="Aansluiting: eigen beeld per scène" Tag="sleutelbeelden" />
+                                <ComboBoxItem Content="Aansluiting: doorlopend" Tag="doorlopend" />
+                            </ComboBox>
+                            <ComboBox x:Name="OvergangKeuze" SelectedIndex="0" Margin="0,8,0,0" ToolTip="Overgang tussen de scènes">
+                                <ComboBoxItem Content="Zachte overgang" Tag="zacht" />
+                                <ComboBoxItem Content="Harde overgang" Tag="hard" />
+                            </ComboBox>
+
+                            <Rectangle Height="1" Fill="{DynamicResource BorderBrush}" Margin="0,18,0,14" />
+                            <TextBlock Text="Personages gelijk houden" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,10" />
+                            <ComboBox x:Name="ConsistentieKeuze" SelectedIndex="1" SelectionChanged="ConsistentieKeuze_SelectionChanged"
+                                      ToolTip="Hoe de personages in alle sleutelbeelden op elkaar gaan lijken. Gebruik je de cast (tab 3), dan hoort elke speler bij een eigen referentiebeeld.">
+                                <ComboBoxItem Content="Alleen tekst" Tag="tekst" />
+                                <ComboBoxItem Content="Zelfde als scène 1" Tag="eerste" />
+                                <ComboBoxItem Content="Eigen voorbeeldbeeld" Tag="eigen" />
+                            </ComboBox>
+                            <ComboBox x:Name="GelijkenisKeuze" SelectedIndex="1" Margin="0,8,0,0"
+                                      ToolTip="Hoe sterk een nieuw beeld op het voorbeeld moet lijken. Sterker = meer dezelfde robot, maar ook meer van de achtergrond van het voorbeeld.">
+                                <ComboBoxItem Content="Gelijkenis: licht" Tag="0.3" />
+                                <ComboBoxItem Content="Gelijkenis: normaal" Tag="0.45" />
+                                <ComboBoxItem Content="Gelijkenis: sterk" Tag="0.6" />
+                            </ComboBox>
+                            <StackPanel x:Name="VoorbeeldPaneel" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+                                <Button Content="Voorbeeldbeeld kiezen…" Click="VoorbeeldButton_Click" Style="{DynamicResource AccentButtonStyle}" />
+                                <TextBlock x:Name="VoorbeeldTekst" Margin="10,0,0,0" VerticalAlignment="Center" Text="nog geen gekozen"
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                            </StackPanel>
+
+                            <CheckBox x:Name="ControleerBox" IsChecked="True" Margin="0,16,0,0"
+                                      Content="Sleutelbeelden eerst laten controleren voor het animeren"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Wat is het verhaal?" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,6" />
+                        <Border Grid.Row="1" CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                            <TextBox x:Name="IdeeBox" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                     FontSize="{DynamicResource FontSizeSmall}"
+                                     ToolTip="Bijvoorbeeld: een jonge heks vliegt in het maanlicht naar een kasteel op een berg, landt op de toren en kijkt uit over het dal" />
+                        </Border>
+
+                        <Button Grid.Row="2" x:Name="TijdlijnButton" Content="Maak tijdlijn uit idee" Click="TijdlijnButton_Click"
+                                HorizontalAlignment="Left" Margin="0,10,0,0" Style="{DynamicResource AccentButtonStyle}" />
+
+                        <TextBlock Grid.Row="3" Text="Stijl en personages (blijft in elke scène gelijk, Engels)" Foreground="{DynamicResource TextMutedBrush}"
+                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,16,0,6" />
+                        <Border Grid.Row="4" CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                            <TextBox x:Name="StijlBox" Height="96" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                     FontSize="{DynamicResource FontSizeSmall}" />
+                        </Border>
+
+                        <Grid Grid.Row="5" Margin="0,12,0,0">
+                            <WrapPanel HorizontalAlignment="Left">
+                                <Button Content="Verhaal opslaan…" Click="VerhaalOpslaan_Click" Margin="0,0,8,0" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button Content="Verhaal openen…" Click="VerhaalOpenen_Click" Style="{DynamicResource AccentButtonStyle}" />
+                            </WrapPanel>
+                            <Button Content="Volgende: Scènes  ▶" Tag="1" Click="Volgende_Click" HorizontalAlignment="Right" Style="{DynamicResource AccentButtonStyle}" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================ 2  SCÈNES -->
+            <Grid x:Name="TabScenes" Visibility="Collapsed">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                            <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                                <TextBlock Text="Kies onderaan een scène op de tijdlijn en pas hem hier aan." Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,10" />
+                                <TextBlock x:Name="SceneKop" Text="Scène" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,8" />
+
+                                <StackPanel x:Name="SceneEditor" IsEnabled="False">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="10" />
+                                            <ColumnDefinition Width="130" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                                Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                            <TextBox x:Name="TitelBox" Background="Transparent" BorderThickness="0" Padding="10,6" MinHeight="32"
+                                                     VerticalContentAlignment="Center" TextChanged="TitelBox_TextChanged"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                                     FontSize="{DynamicResource FontSizeSmall}" ToolTip="Titel van de scène" />
+                                        </Border>
+                                        <ComboBox Grid.Column="2" x:Name="DuurKeuze" SelectionChanged="DuurKeuze_SelectionChanged">
+                                            <ComboBoxItem Content="2 sec" Tag="2" />
+                                            <ComboBoxItem Content="3 sec" Tag="3" />
+                                            <ComboBoxItem Content="4 sec" Tag="4" />
+                                            <ComboBoxItem Content="5 sec" Tag="5" />
+                                            <ComboBoxItem Content="6 sec" Tag="6" />
+                                        </ComboBox>
+                                    </Grid>
+
+                                    <TextBlock Text="Wat gebeurt er?" Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="{DynamicResource FontSizeSmall}" Margin="0,10,0,6" />
+                                    <Border CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                            Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                        <TextBox x:Name="GebeurtBox" Height="90" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                                 AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                                 TextChanged="GebeurtBox_TextChanged"
+                                                 Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                                 FontSize="{DynamicResource FontSizeSmall}"
+                                                 ToolTip="Wijzig je deze tekst, dan wordt de Engelse tekst hieronder bij het starten opnieuw afgeleid." />
+                                    </Border>
+
+                                    <StackPanel x:Name="CastScenePaneel" Visibility="Collapsed" Margin="0,12,0,0">
+                                        <TextBlock Text="Wie speelt mee in deze scène?" Foreground="{DynamicResource TextMutedBrush}"
+                                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,6" />
+                                        <WrapPanel x:Name="SpelersLijst" />
+                                        <TextBlock Text="Waar speelt het?" Foreground="{DynamicResource TextMutedBrush}"
+                                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,6,0,6" />
+                                        <ComboBox x:Name="PlekKeuze" SelectionChanged="PlekKeuze_SelectionChanged" />
+                                        <TextBlock Text="Welke belangrijke voorwerpen komen erin voor? (het eerste krijgt een eigen voorbeeldbeeld)" Foreground="{DynamicResource TextMutedBrush}"
+                                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,10,0,6" />
+                                        <WrapPanel x:Name="VoorwerpenLijst" />
+                                    </StackPanel>
+
+                                    <CheckBox x:Name="EngelsToon" Content="Toon de Engelse tekst voor het model" Margin="0,12,0,0"
+                                              Checked="EngelsToon_Changed" Unchecked="EngelsToon_Changed"
+                                              Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                                    <StackPanel x:Name="EngelsPaneel" Visibility="Collapsed">
+                                        <TextBlock Text="Eerste beeld (leeg = automatisch afleiden)" Foreground="{DynamicResource TextMutedBrush}"
+                                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,8,0,6" />
+                                        <Border CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                                Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                            <TextBox x:Name="BeeldBox" Height="58" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                                     TextChanged="BeeldBox_TextChanged"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                                     FontSize="{DynamicResource FontSizeSmall}" />
+                                        </Border>
+                                        <TextBlock Text="Beweging en camera" Foreground="{DynamicResource TextMutedBrush}"
+                                                   FontSize="{DynamicResource FontSizeSmall}" Margin="0,8,0,6" />
+                                        <Border CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                                Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                            <TextBox x:Name="BewegingBox" Height="58" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                                     TextChanged="BewegingBox_TextChanged"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                                     FontSize="{DynamicResource FontSizeSmall}" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button Content="+ Scène" Click="VoegToe_Click" Margin="0,0,8,8" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="VerwijderButton" Content="− Scène" Click="Verwijder_Click" Margin="0,0,8,8" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="LinksButton" Content="◀" Click="Links_Click" Margin="0,0,8,8" Style="{DynamicResource AccentButtonStyle}" ToolTip="Scène eerder in de film" />
+                                    <Button x:Name="RechtsButton" Content="▶" Click="Rechts_Click" Margin="0,0,8,8" Style="{DynamicResource AccentButtonStyle}" ToolTip="Scène later in de film" />
+                                    <Button x:Name="OpnieuwButton" Content="Deze scène opnieuw" Click="Opnieuw_Click" Margin="0,0,8,8" Style="{DynamicResource AccentButtonStyle}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,0,16,12">
+                            <Button Content="◀  Verhaal" Tag="0" Click="Volgende_Click" Margin="0,0,8,0" Style="{DynamicResource AccentButtonStyle}" />
+                            <Button Content="Volgende: Cast  ▶" Tag="2" Click="Volgende_Click" Style="{DynamicResource AccentButtonStyle}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================ 3  CAST -->
+            <Grid x:Name="TabCast" Visibility="Collapsed">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <CheckBox x:Name="CastGebruikBox" Checked="CastGebruik_Changed" Unchecked="CastGebruik_Changed"
+                                      Content="Spelers, plekken en voorwerpen gebruiken (optioneel)" FontWeight="Bold"
+                                      Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                            <TextBlock TextWrapping="Wrap" Margin="0,6,0,10" Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Text="Elke speler, plek en belangrijk voorwerp krijgt een eigen referentiebeeld: een speler op een neutrale achtergrond, een plek zonder personen, een voorwerp los. Bij het maken van de sleutelbeelden gaan die beelden mee als voorbeeld. Zo blijft de robot dezelfde robot, het bos hetzelfde bos en de bezemsteel dezelfde bezemsteel. Voor een eenvoudig verhaaltje kun je dit overslaan." />
+                        </StackPanel>
+
+                        <Grid Grid.Row="1" x:Name="CastInhoud" IsEnabled="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                                <WrapPanel x:Name="CastLijst" />
+                            </ScrollViewer>
+
+                            <ProgressBar Grid.Row="1" x:Name="CastVoortgang" Height="8" Minimum="0" Maximum="1" Margin="0,8,0,0"
+                                         Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource BackgroundBrush}" BorderThickness="0" />
+
+                            <Grid Grid.Row="2" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="CastStatus" TextWrapping="Wrap" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                                <WrapPanel Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Right" MaxWidth="900">
+                                    <Button x:Name="CastToevoegSpelerButton" Content="+ Speler" Click="CastToevoegSpeler_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="CastToevoegPlekButton" Content="+ Plek" Click="CastToevoegPlek_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="CastToevoegVoorwerpButton" Content="+ Voorwerp" Click="CastToevoegVoorwerp_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="CastLijstButton" Content="Lijst uit verhaal laten maken" Click="CastLijst_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="CastMaakButton" Content="Maak referentiebeelden" Click="CastMaak_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button x:Name="CastStopButton" Content="Stop" Click="CastStopKnop_Click" IsEnabled="False" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button Content="◀  Scènes" Tag="1" Click="Volgende_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                    <Button Content="Volgende: Beelden  ▶" Tag="3" Click="Volgende_Click" Margin="0,0,0,4" Style="{DynamicResource AccentButtonStyle}" />
+                                </WrapPanel>
+                            </Grid>
+                        </Grid>
+
+                        <!-- Zonder cast is er niets te doen op deze tab: gewoon door naar de beelden. -->
+                        <StackPanel Grid.Row="1" x:Name="CastUit" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="De cast is uitgeschakeld." Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" HorizontalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Center">
+                                <Button Content="◀  Scènes" Tag="1" Click="Volgende_Click" Margin="0,0,8,0" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button Content="Volgende: Beelden  ▶" Tag="3" Click="Volgende_Click" Style="{DynamicResource AccentButtonStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================ 4  BEELDEN -->
+            <Grid x:Name="TabBeelden" Visibility="Collapsed">
+                <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Controleer de sleutelbeelden" FontSize="{DynamicResource FontSizeTitle}" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock x:Name="BeoordelingUitleg" TextWrapping="Wrap" Margin="0,4,0,10"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                                       Text="Elke scène begint met zo'n beeld. Klopt het niet, typ dan bij het beeld wat anders moet of vink 'Opnieuw maken' aan. Het chatmodel verwerkt je opmerkingen in het verhaal." />
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <WrapPanel x:Name="BeoordelingLijst" />
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                            <TextBlock Text="Opmerking voor het hele verhaal (bijvoorbeeld: het moet steeds dezelfde robot zijn)"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,6" />
+                            <Border CornerRadius="{DynamicResource RadiusMedium}" BorderThickness="1"
+                                    Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}">
+                                <TextBox x:Name="AlgemeneOpmerkingBox" Height="54" Background="Transparent" BorderThickness="0" Padding="10,8"
+                                         AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                         FontSize="{DynamicResource FontSizeSmall}" />
+                            </Border>
+                        </StackPanel>
+
+                        <ProgressBar Grid.Row="3" x:Name="BeeldenVoortgang" Height="8" Minimum="0" Maximum="1" Margin="0,10,0,0"
+                                     Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource BackgroundBrush}" BorderThickness="0" />
+
+                        <Grid Grid.Row="4" Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="BeoordelingStatus" TextWrapping="Wrap" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                            <WrapPanel Grid.Column="1" Margin="12,0,0,0" HorizontalAlignment="Right" MaxWidth="1000">
+                                <Button x:Name="BeeldenMaakButton" Content="Maak sleutelbeelden" Click="BeeldenMaak_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button x:Name="BeoordelingNogmaalsButton" Content="Pas opmerkingen toe en maak opnieuw" Click="BeoordelingNogmaals_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button x:Name="BeoordelingGoedButton" Content="Goedkeuren en animeren" Click="BeoordelingGoed_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button x:Name="BeoordelingStopButton" Content="Stop" Click="StopButton_Click" IsEnabled="False" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button Content="◀  Cast" Tag="2" Click="Volgende_Click" Margin="0,0,8,4" Style="{DynamicResource AccentButtonStyle}" />
+                                <Button x:Name="BeoordelingSluitButton" Content="Naar de film  ▶" Tag="4" Click="Volgende_Click" Margin="0,0,0,4" Style="{DynamicResource AccentButtonStyle}" />
+                            </WrapPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================ 5  FILM -->
+            <Grid x:Name="TabFilm" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="{DynamicResource BackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}">
+                    <Grid>
+                        <MediaElement x:Name="Speler" LoadedBehavior="Manual" UnloadedBehavior="Manual" Stretch="Uniform"
+                                      Margin="8" MediaEnded="Speler_MediaEnded" MediaFailed="Speler_MediaFailed" />
+                        <Image x:Name="SleutelBeeld" Stretch="Uniform" Margin="8" Visibility="Collapsed"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <Border x:Name="SleutelLabel" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                Margin="16" Padding="10,4" CornerRadius="{DynamicResource RadiusMedium}"
+                                Background="{DynamicResource BackgroundBrush}" Opacity="0.9">
+                            <TextBlock x:Name="SleutelLabelTekst" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="{DynamicResource FontSizeSmall}" />
+                        </Border>
+                        <TextBlock x:Name="LegeTekst" Text="Hier verschijnt je film"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                    </Grid>
+                </Border>
+
+                <!-- Voortgangskaart: in welke fase het zit, hoever, en hoe lang het nog duurt. -->
+                <Border Grid.Row="1" Margin="0,12,0,0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMedium}" Padding="16,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="FaseEen" Text="1  Sleutelbeelden" FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="  ›  " FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock x:Name="FaseTwee" Text="2  Scènes animeren" FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock Text="  ›  " FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}" />
+                            <TextBlock x:Name="FaseDrie" Text="3  Samenvoegen" FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+
+                        <Grid Margin="0,8,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="KopText" Text="Klaar om te beginnen" FontSize="{DynamicResource FontSizeTitle}" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" x:Name="ProcentText" Text="" FontSize="{DynamicResource FontSizeTitle}" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentBrush}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <ProgressBar x:Name="Voortgang" Height="14" Minimum="0" Maximum="1"
+                                     Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource BackgroundBrush}" BorderThickness="0" />
+
+                        <TextBlock x:Name="StatusText" Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                        <TextBlock x:Name="TijdText" Margin="0,2,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="2" Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ListBox x:Name="Galerij" Height="46" Background="Transparent" BorderThickness="0"
+                             Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             SelectionChanged="Galerij_SelectionChanged" ToolTip="Eerder gemaakte films">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button x:Name="MaakButton" Content="Maak film" Click="MaakButton_Click" Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="StopButton" Content="Stop" Click="StopButton_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="SpeelKlaarButton" Content="Speel wat klaar is" Click="SpeelKlaar_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}"
+                                ToolTip="Speelt de scènes die al klaar zijn achter elkaar af, ook terwijl de film nog gemaakt wordt" />
+                        <Button x:Name="ToonFilmButton" Content="Toon de film" Click="ToonFilm_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="OpslaanButton" Content="Film opslaan…" Click="FilmOpslaan_Click" IsEnabled="False" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+                        <Button Content="◀  Beelden" Tag="3" Click="Volgende_Click" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Onder, op elke tab: de tijdlijn. -->
+        <Border Grid.Row="2" Margin="0,16,0,0" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                CornerRadius="{DynamicResource RadiusMedium}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="TijdlijnKop" Margin="12,8,12,0" Foreground="{DynamicResource TextMutedBrush}"
+                           FontSize="{DynamicResource FontSizeSmall}" Text="Tijdlijn" />
+                <ScrollViewer Grid.Row="1" x:Name="TijdlijnScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                              SizeChanged="TijdlijnScroll_SizeChanged">
+                    <Canvas x:Name="Tijdlijn" Height="96" MouseLeftButtonUp="Tijdlijn_Klik" Background="Transparent" />
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+
+</UserControl>
