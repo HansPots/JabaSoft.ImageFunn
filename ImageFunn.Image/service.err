@@ -1,42 +1,94 @@
-INFO:     Started server process [10920]
+INFO:     Started server process [26052]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:5330 (Press CTRL+C to quit)
-C:\Repos\JabaSoft.ImageFunn\ImageFunn.Image\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py:206: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
-  warnings.warn(
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
+Loading weights:   0%|          | 0/520 [00:00<?, ?it/s]Loading weights:   9%|▉         | 47/520 [00:00<00:01, 403.82it/s]Loading weights:  17%|█▋        | 88/520 [00:00<00:01, 274.03it/s]Loading weights:  23%|██▎       | 118/520 [00:00<00:01, 270.92it/s]Loading weights:  28%|██▊       | 147/520 [00:00<00:01, 221.51it/s]Loading weights:  34%|███▍      | 178/520 [00:00<00:01, 238.33it/s]Loading weights:  39%|███▉      | 204/520 [00:00<00:01, 228.87it/s]Loading weights:  44%|████▍     | 228/520 [00:00<00:01, 208.93it/s]Loading weights:  49%|████▉     | 257/520 [00:01<00:01, 211.64it/s]Loading weights:  54%|█████▍    | 281/520 [00:01<00:01, 218.67it/s]Loading weights:  59%|█████▉    | 309/520 [00:01<00:00, 233.83it/s]Loading weights:  64%|██████▍   | 333/520 [00:01<00:00, 219.86it/s]Loading weights:  68%|██████▊   | 356/520 [00:01<00:00, 204.95it/s]Loading weights:  74%|███████▍  | 387/520 [00:01<00:00, 204.16it/s]Loading weights:  79%|███████▉  | 412/520 [00:01<00:00, 213.84it/s]Loading weights:  84%|████████▍ | 437/520 [00:01<00:00, 199.53it/s]Loading weights:  90%|████████▉ | 466/520 [00:02<00:00, 213.77it/s]Loading weights:  94%|█████████▍| 488/520 [00:02<00:00, 206.98it/s]Loading weights: 100%|██████████| 520/520 [00:02<00:00, 226.77it/s]
 C:\Repos\JabaSoft.ImageFunn\ImageFunn.Image\.venv\Lib\site-packages\diffusers\utils\deprecation_utils.py:23: FutureWarning: `torch_dtype` is deprecated and will be removed in version 1.0.0. Please use `dtype` instead.
   deprecate("torch_dtype", "1.0.0", _TORCH_DTYPE_DEPRECATION_MESSAGE)
-Loading pipeline components...:   0%|          | 0/5 [00:00<?, ?it/s]Loading pipeline components...:  20%|██        | 1/5 [00:01<00:06,  1.64s/it]
-Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s][A
-Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:06,  1.69s/it][A
-Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.69s/it][A
-Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.73s/it][A
-Loading checkpoint shards:  80%|████████  | 4/5 [00:12<00:03,  3.88s/it][A
-Loading checkpoint shards: 100%|██████████| 5/5 [00:12<00:00,  2.56s/it][ALoading checkpoint shards: 100%|██████████| 5/5 [00:12<00:00,  2.51s/it]
-Loading pipeline components...:  60%|██████    | 3/5 [00:14<00:10,  5.10s/it]
-Loading weights:   0%|          | 0/242 [00:00<?, ?it/s][A
-Loading weights:   1%|          | 3/242 [00:00<00:11, 21.07it/s][A
-Loading weights:   2%|▏         | 6/242 [00:01<00:52,  4.52it/s][A
-Loading weights:   3%|▎         | 8/242 [00:01<00:51,  4.52it/s][A
-Loading weights:   4%|▎         | 9/242 [00:02<01:08,  3.41it/s][A
-Loading weights:   4%|▍         | 10/242 [00:02<01:28,  2.61it/s][A
-Loading weights:   5%|▍         | 11/242 [00:03<01:42,  2.25it/s][A
-Loading weights:   5%|▍         | 12/242 [00:04<01:49,  2.10it/s][A
-Loading weights:   5%|▌         | 13/242 [00:05<02:17,  1.66it/s][A
-Loading weights:   6%|▌         | 14/242 [00:07<03:55,  1.03s/it][A
-Loading weights:   6%|▌         | 15/242 [00:08<03:58,  1.05s/it][A
-Loading weights:   7%|▋         | 16/242 [00:09<03:55,  1.04s/it][A
-Loading weights:   7%|▋         | 17/242 [00:10<03:37,  1.03it/s][A
-Loading weights:   7%|▋         | 18/242 [00:10<02:57,  1.26it/s][A
-Loading weights:   8%|▊         | 19/242 [00:12<03:42,  1.00it/s][A
-Loading weights:   8%|▊         | 20/242 [00:12<02:53,  1.28it/s][A
-Loading weights:   9%|▊         | 21/242 [00:13<02:39,  1.39it/s][A
-Loading weights:   9%|▉         | 22/242 [00:21<11:28,  3.13s/it][ALoading weights: 100%|██████████| 242/242 [00:21<00:00, 11.21it/s]
-Loading pipeline components...: 100%|██████████| 5/5 [00:37<00:00,  8.49s/it]Loading pipeline components...: 100%|██████████| 5/5 [00:37<00:00,  7.53s/it]
-There are modules in WanTransformer3DModel that should be kept in float32: ['rope', 'time_embedder', 'scale_shift_table', 'norm1', 'norm2', 'norm3']. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
-There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
-There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
-The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
-There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][A
+Loading weights:   7%|▋         | 13/196 [00:00<00:01, 99.62it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 1360.69it/s]
+Loading pipeline components...:  43%|████▎     | 3/7 [00:00<00:00,  8.40it/s]Loading pipeline components...:  71%|███████▏  | 5/7 [00:00<00:00,  5.04it/s]
+Loading weights:   0%|          | 0/517 [00:00<?, ?it/s][A
+Loading weights:   3%|▎         | 16/517 [00:00<00:04, 104.97it/s][A
+Loading weights:   5%|▌         | 27/517 [00:00<00:07, 69.84it/s] [A
+Loading weights:   7%|▋         | 38/517 [00:00<00:05, 81.58it/s][A
+Loading weights:   9%|▉         | 47/517 [00:00<00:05, 80.88it/s][A
+Loading weights:  13%|█▎        | 65/517 [00:00<00:04, 103.60it/s][A
+Loading weights:  15%|█▍        | 76/517 [00:00<00:05, 81.54it/s] [ALoading weights: 100%|██████████| 517/517 [00:00<00:00, 566.16it/s]
+Loading pipeline components...: 100%|██████████| 7/7 [00:02<00:00,  2.55it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:02<00:00,  3.09it/s]
+There are modules in UNet2DConditionModel that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+C:\Repos\JabaSoft.ImageFunn\ImageFunn.Image\.venv\Lib\site-packages\diffusers\pipelines\stable_diffusion_xl\pipeline_stable_diffusion_xl.py:748: FutureWarning: `upcast_vae` is deprecated and will be removed in version 1.0.0. `upcast_vae` is deprecated. Please use `pipe.vae.to(torch.float32)`. For more details, please refer to: https://github.com/huggingface/diffusers/pull/12619#issue-3606633695.
+  deprecate(
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+C:\Repos\JabaSoft.ImageFunn\ImageFunn.Image\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py:206: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+Loading weights:   0%|          | 0/520 [00:00<?, ?it/s]Loading weights:   6%|▋         | 33/520 [00:00<00:01, 282.03it/s]Loading weights:  12%|█▏        | 62/520 [00:00<00:01, 260.99it/s]Loading weights:  17%|█▋        | 89/520 [00:00<00:02, 208.24it/s]Loading weights:  21%|██▏       | 111/520 [00:00<00:02, 172.53it/s]Loading weights:  25%|██▌       | 130/520 [00:00<00:02, 174.12it/s]Loading weights:  29%|██▊       | 149/520 [00:00<00:02, 159.21it/s]Loading weights:  34%|███▎      | 175/520 [00:00<00:01, 184.93it/s]Loading weights:  38%|███▊      | 195/520 [00:01<00:02, 159.42it/s]Loading weights:  42%|████▏     | 218/520 [00:01<00:01, 169.91it/s]Loading weights:  47%|████▋     | 242/520 [00:01<00:01, 172.94it/s]Loading weights:  50%|█████     | 260/520 [00:01<00:01, 171.71it/s]Loading weights:  54%|█████▍    | 281/520 [00:01<00:01, 171.44it/s]Loading weights:  58%|█████▊    | 304/520 [00:01<00:01, 186.34it/s]Loading weights:  62%|██████▏   | 324/520 [00:01<00:01, 160.37it/s]Loading weights:  66%|██████▋   | 345/520 [00:01<00:01, 171.31it/s]Loading weights:  70%|███████   | 365/520 [00:02<00:00, 161.76it/s]Loading weights:  74%|███████▍  | 387/520 [00:02<00:00, 161.27it/s]Loading weights:  78%|███████▊  | 406/520 [00:02<00:00, 161.21it/s]Loading weights:  82%|████████▏ | 427/520 [00:02<00:00, 154.39it/s]Loading weights:  87%|████████▋ | 453/520 [00:02<00:00, 168.75it/s]Loading weights:  91%|█████████ | 471/520 [00:02<00:00, 167.97it/s]Loading weights:  94%|█████████▍| 489/520 [00:02<00:00, 165.17it/s]Loading weights: 100%|██████████| 520/520 [00:02<00:00, 177.83it/s]
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][A
+Loading weights:   6%|▌         | 11/196 [00:00<00:02, 75.52it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 1122.04it/s]
+Loading pipeline components...:  43%|████▎     | 3/7 [00:00<00:00,  7.52it/s]Loading pipeline components...:  86%|████████▌ | 6/7 [00:00<00:00, 12.59it/s]
+Loading weights:   0%|          | 0/517 [00:00<?, ?it/s][A
+Loading weights:   2%|▏         | 9/517 [00:00<00:06, 82.56it/s][A
+Loading weights:   5%|▍         | 24/517 [00:00<00:05, 90.16it/s][A
+Loading weights:   6%|▋         | 33/517 [00:00<00:06, 71.17it/s][A
+Loading weights:   8%|▊         | 41/517 [00:00<00:10, 44.20it/s][A
+Loading weights:   9%|▉         | 47/517 [00:00<00:10, 43.23it/s][A
+Loading weights:  10%|█         | 52/517 [00:01<00:10, 43.58it/s][A
+Loading weights:  12%|█▏        | 63/517 [00:01<00:07, 57.81it/s][ALoading weights: 100%|██████████| 517/517 [00:01<00:00, 423.45it/s]
+Loading pipeline components...: 100%|██████████| 7/7 [00:02<00:00,  3.31it/s]
+There are modules in UNet2DConditionModel that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+Loading weights:   0%|          | 0/520 [00:00<?, ?it/s]Loading weights:   8%|▊         | 39/520 [00:00<00:01, 339.06it/s]Loading weights:  14%|█▍        | 73/520 [00:00<00:01, 278.23it/s]Loading weights:  20%|█▉        | 102/520 [00:00<00:01, 241.07it/s]Loading weights:  25%|██▍       | 129/520 [00:00<00:01, 241.42it/s]Loading weights:  30%|██▉       | 154/520 [00:00<00:01, 236.98it/s]Loading weights:  34%|███▍      | 178/520 [00:00<00:01, 234.02it/s]Loading weights:  39%|███▉      | 202/520 [00:00<00:01, 227.32it/s]Loading weights:  44%|████▍     | 229/520 [00:00<00:01, 220.80it/s]Loading weights:  49%|████▉     | 257/520 [00:01<00:01, 211.68it/s]Loading weights:  56%|█████▌    | 291/520 [00:01<00:00, 244.95it/s]Loading weights:  61%|██████    | 317/520 [00:01<00:00, 221.75it/s]Loading weights:  66%|██████▌   | 343/520 [00:01<00:00, 212.82it/s]Loading weights:  71%|███████   | 370/520 [00:01<00:00, 221.67it/s]Loading weights:  76%|███████▌  | 393/520 [00:01<00:00, 217.24it/s]Loading weights:  80%|████████  | 416/520 [00:01<00:00, 205.54it/s]Loading weights:  86%|████████▌ | 447/520 [00:01<00:00, 232.71it/s]Loading weights:  91%|█████████ | 471/520 [00:02<00:00, 222.94it/s]Loading weights:  95%|█████████▌| 494/520 [00:02<00:00, 198.09it/s]Loading weights: 100%|██████████| 520/520 [00:02<00:00, 232.37it/s]
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][A
+Loading weights:   4%|▍         | 8/196 [00:00<00:02, 75.88it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 1771.58it/s]
+Loading pipeline components...:  43%|████▎     | 3/7 [00:00<00:00, 11.22it/s]Loading pipeline components...:  71%|███████▏  | 5/7 [00:00<00:00,  8.61it/s]
+Loading weights:   0%|          | 0/517 [00:00<?, ?it/s][A
+Loading weights:   1%|          | 5/517 [00:00<00:12, 40.86it/s][A
+Loading weights:   2%|▏         | 10/517 [00:00<00:11, 44.94it/s][A
+Loading weights:   3%|▎         | 15/517 [00:00<00:11, 44.00it/s][A
+Loading weights:   4%|▍         | 20/517 [00:00<00:14, 34.35it/s][A
+Loading weights:   5%|▍         | 24/517 [00:00<00:15, 32.32it/s][A
+Loading weights:   5%|▌         | 28/517 [00:00<00:16, 29.89it/s][A
+Loading weights:   6%|▌         | 32/517 [00:00<00:16, 28.59it/s][ALoading weights: 100%|██████████| 517/517 [00:01<00:00, 515.00it/s]
+Loading pipeline components...: 100%|██████████| 7/7 [00:01<00:00,  2.92it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:01<00:00,  3.70it/s]
+There are modules in UNet2DConditionModel that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (109 > 77). Running this sequence through the model will result in indexing errors
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer CLIPTokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['blue - greys with warm amber accents , a mid - 3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (109 > 77). Running this sequence through the model will result in indexing errors
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['blue - greys with warm amber accents , a mid - 3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['3 0 s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['s woman with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['with dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['dark brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['brown hair in a low ponytail , olive - green coat , black boots , pale skin']
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKL that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.

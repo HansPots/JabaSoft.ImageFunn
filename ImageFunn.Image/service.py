@@ -47,15 +47,15 @@ app = FastAPI(title="ImageFunn Image Service")
 UITVOER = Path(__file__).parent / "uitvoer"
 UITVOER.mkdir(exist_ok=True)
 
-# "juggernaut" (standaard): JuggernautXL Ragnarok, een zeer fotorealistische SDXL-variant.
+# "realvis" (standaard): RealVisXL V5.0, een fotorealistische SDXL-variant. "juggernaut": JuggernautXL Ragnarok, ook fotorealistisch.
 # "sdxl": het gewone SDXL-basismodel. "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
-MODEL_KEUZE = os.environ.get("IMAGEFUNN_MODEL", "juggernaut").lower()
+MODEL_KEUZE = os.environ.get("IMAGEFUNN_MODEL", "realvis").lower()
 
 # Juggernaut is een SDXL-model: dezelfde pijplijn, IP-Adapters en afmetingen, alleen met een ander beeldnetwerk (UNet).
-SDXL_FAMILIE = MODEL_KEUZE in ("sdxl", "juggernaut")
+SDXL_FAMILIE = MODEL_KEUZE in ("sdxl", "juggernaut", "realvis")
 
 # Guidance: Juggernaut werkt het best rond 5; het SDXL-basismodel rond 6,5.
-GUIDANCE = 5.0 if MODEL_KEUZE == "juggernaut" else 6.5
+GUIDANCE = 5.0 if MODEL_KEUZE in ("juggernaut", "realvis") else 6.5
 
 # Na zoveel seconden zonder opdracht laat de service zijn modellen los en STOPT hij zichzelf. Alleen het videokaartgeheugen
 # laat zich in het proces vrijgeven; het werkgeheugen (RAM, 7 tot 13 GB) houden PyTorch en de CUDA-stuurprogramma's vast

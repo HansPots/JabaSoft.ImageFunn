@@ -111,8 +111,8 @@
                             </ComboBox>
                             <ComboBox x:Name="BeeldmodelKeuze" SelectedIndex="0" Margin="0,8,0,0"
                                       ToolTip="Welk model de beelden maakt (sleutelbeelden en de cast). Beide zijn realistisch, met een eigen look.">
-                                <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
                                 <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
+                                <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
                             </ComboBox>
                             <ComboBox x:Name="VideomodelKeuze" SelectedIndex="0" Margin="0,8,0,0"
                                       ToolTip="LTX is snel, maar de beweging loopt bij langere scènes vaak uit elkaar. Wan 2.2 beweegt echter en blijft langer netjes, maar is veel trager en gebruikt bijna al je werkgeheugen: sluit andere programma's.">

@@ -75,8 +75,8 @@
                 <StackPanel Grid.Row="3">
                     <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,0,0,8"
                               ToolTip="Welk model het beeld maakt. Beide zijn realistisch maar hebben een eigen look: probeer dezelfde tekst met allebei.">
-                        <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
                         <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
+                        <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
                     </ComboBox>
                     <Grid>
                     <Grid.ColumnDefinitions>

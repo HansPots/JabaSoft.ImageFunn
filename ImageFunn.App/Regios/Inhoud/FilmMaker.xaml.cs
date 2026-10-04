@@ -1076,7 +1076,7 @@ public partial class FilmMaker : UserControl
 
         public string Videomodel { get; set; } = "ltx";
 
-        public string Beeldmodel { get; set; } = "juggernaut";
+        public string Beeldmodel { get; set; } = "realvis";
 
         public string Formaat { get; set; } = "704x480";
 
