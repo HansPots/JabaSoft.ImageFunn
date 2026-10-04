@@ -389,6 +389,16 @@ public partial class FilmMaker
 
     private void CastToevoegVoorwerp_Click(object sender, RoutedEventArgs e) => VoegCastToe("voorwerp", "Nieuw voorwerp");
 
+    /// <summary>Een beeld uit Tekst naar beeld, met een eigen referentiebeeld erbij, in de cast zetten en de cast aanzetten.</summary>
+    public void NeemCastOver(CastItem item)
+    {
+        item.Naam = UniekeNaam(item.Naam);
+        _cast.Add(item);
+        CastGebruikBox.IsChecked = true;
+        BouwCastKaarten();
+        VernieuwStappen();
+    }
+
     private void VoegCastToe(string soort, string naam)
     {
         _cast.Add(new CastItem { Naam = UniekeNaam(naam), Soort = soort });
@@ -557,6 +567,7 @@ public partial class FilmMaker
             Breedte = int.Parse(formaat[0]),
             Hoogte = int.Parse(formaat[1]),
             Stijl = StijlVoorService(),
+            Beeldmodel = TagVan(BeeldmodelKeuze),
             Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Seed = Random.Shared.Next(),

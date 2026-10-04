@@ -41,6 +41,10 @@ public sealed class BeeldOpdracht
     [JsonPropertyName("videomodel")]
     public string Videomodel { get; set; } = "ltx";
 
+    /// <summary>"juggernaut" of "realvis"; leeg = de standaard van de service. Geldt voor beelden, sleutelbeelden, cast en bijsturen.</summary>
+    [JsonPropertyName("beeldmodel")]
+    public string Beeldmodel { get; set; } = string.Empty;
+
     /// <summary>De scènes van een film - alleen bij soort "film".</summary>
     [JsonPropertyName("scenes")]
     public List<FilmScene> Scenes { get; set; } = [];

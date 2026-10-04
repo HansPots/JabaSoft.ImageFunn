@@ -116,6 +116,8 @@ class Opdracht(BaseModel):
     frames: int = Field(97, ge=9, le=161)
     # Welk videomodel: "ltx" (snel, LTX-Video 0.9.1) of "wan" (Wan 2.2 5B: echtere beweging, trager). Geldt voor soort "video".
     videomodel: Literal["ltx", "wan"] = "ltx"
+    # Welk beeldmodel (alleen bij de SDXL-familie): "juggernaut" of "realvis"; leeg = de standaard van de service.
+    beeldmodel: Literal["", "juggernaut", "realvis"] = ""
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
     modus: Literal["doorlopend", "sleutelbeelden"] = "sleutelbeelden"
@@ -170,6 +172,7 @@ class Taak:
             "bron_beeld": self.opdracht.bron_beeld,
             "frames": self.opdracht.frames,
             "videomodel": self.opdracht.videomodel,
+            "beeldmodel": self.opdracht.beeldmodel,
             "seed": self.seed,
             "scenes": [sc.model_dump() for sc in self.opdracht.scenes],
             "modus": self.opdracht.modus,
@@ -186,10 +189,13 @@ class Taak:
 TAKEN: dict[str, Taak] = {}
 _wachtrij_slot = threading.Lock()  # één beeld tegelijk: de GPU is maar één keer aanwezig
 _pipe = None
+_pipe_model = ""  # welk beeldmodel er in _pipe staat
+_vraag_model = ""  # welk beeldmodel de lopende opdracht wil (de service draait één opdracht tegelijk)
 _video_pipe = None  # tekst naar video (LTXPipeline)
 _video_i2v = None  # beeld naar video, deelt de onderdelen van _video_pipe
 _video_model = ""  # welk videomodel er in _video_pipe staat: "ltx" of "wan"
 WAN_ID = "Wan-AI/Wan2.2-TI2V-5B-Diffusers"
+REALVIS_ID = "SG161222/RealVisXL_V5.0"
 _ip_beschikbaar = False  # is de IP-Adapter (voorbeeldbeeld voor dezelfde personages) bij SDXL geladen?
 _pipe_slot = threading.Lock()
 
@@ -268,10 +274,14 @@ def _laad_juggernaut_unet(meld):
 
 def _laad_pijplijn(meld):
     """Laadt het model één keer; daarna blijft het in het geheugen."""
-    global _pipe, _ip_beschikbaar
+    global _pipe, _pipe_model, _ip_beschikbaar
     with _pipe_slot:
+        gevraagd = (_vraag_model or MODEL_KEUZE) if SDXL_FAMILIE else MODEL_KEUZE
         if _pipe is not None:
-            return _pipe
+            if _pipe_model == gevraagd:
+                return _pipe
+            meld("Ander beeldmodel: het huidige wordt losgelaten…")
+            _geef_beeld_vrij()
         _geef_video_vrij()
 
         import torch
@@ -284,7 +294,10 @@ def _laad_pijplijn(meld):
 
             sdxl = "stabilityai/stable-diffusion-xl-base-1.0"
             extra: dict[str, Any] = {}
-            if MODEL_KEUZE == "juggernaut":
+            if gevraagd == "realvis":
+                sdxl = REALVIS_ID
+                meld("Beeldmodel laden (RealVisXL)…")
+            elif gevraagd == "juggernaut":
                 meld("Beeldmodel laden (Juggernaut XL)…")
                 try:
                     unet = _laad_juggernaut_unet(meld)
@@ -315,8 +328,8 @@ def _laad_pijplijn(meld):
                 traceback.print_exc()
                 _ip_beschikbaar = False
                 pipe = StableDiffusionXLPipeline.from_pretrained(sdxl, torch_dtype=torch.float16, variant="fp16", **extra)
-            if "unet" in extra:
-                # De sampler die bij Juggernaut hoort (DPM++ 2M SDE met Karras-sigma's).
+            if "unet" in extra or gevraagd == "realvis":
+                # De sampler die bij Juggernaut en RealVisXL hoort (DPM++ 2M SDE met Karras-sigma's).
                 from diffusers import DPMSolverMultistepScheduler
 
                 pipe.scheduler = DPMSolverMultistepScheduler.from_config(
@@ -352,6 +365,7 @@ def _laad_pijplijn(meld):
 
         pipe.set_progress_bar_config(disable=True)
         _pipe = pipe
+        _pipe_model = gevraagd
         return pipe
 
 
@@ -431,7 +445,8 @@ _bewerk_pijplijnen: dict[str, Any] = {}  # beeld naar beeld en inpainting, delen
 
 
 def _geef_beeld_vrij() -> None:
-    global _pipe
+    global _pipe, _pipe_model
+    _pipe_model = ""
     _bewerk_pijplijnen.clear()
     if _pipe is not None:
         import gc
@@ -492,17 +507,26 @@ def _laad_videopijplijn(meld, vanaf_beeld: bool, model: str = "ltx"):
         return _laad_i2v() if vanaf_beeld else pipe
 
 
+def _video_dtype():
+    """from_pipe zet anders alle onderdelen om naar float32: dat verdubbelt het geheugen en maakt alles tientallen keren trager."""
+    import torch
+
+    return torch.bfloat16
+
+
 def _laad_i2v():
     global _video_i2v
     if _video_i2v is None:
         if _video_model == "wan":
+            import torch
             from diffusers import WanImageToVideoPipeline
 
-            _video_i2v = WanImageToVideoPipeline.from_pipe(_video_pipe)
+            _video_i2v = WanImageToVideoPipeline.from_pipe(_video_pipe, dtype=_video_dtype())
+            _video_i2v.vae.to(torch.float32)  # from_pipe zette ook de VAE op bfloat16; Wan wil die in float32
         else:
             from diffusers import LTXImageToVideoPipeline
 
-            _video_i2v = LTXImageToVideoPipeline.from_pipe(_video_pipe)
+            _video_i2v = LTXImageToVideoPipeline.from_pipe(_video_pipe, dtype=_video_dtype())
         _video_i2v.set_progress_bar_config(disable=True)
     return _video_i2v
 
@@ -542,7 +566,7 @@ def _draai_bewerk(taak: Taak) -> None:
             soort = "inpaint" if masker is not None else "i2i"
             if soort not in _bewerk_pijplijnen:
                 klasse = StableDiffusionXLInpaintPipeline if masker is not None else StableDiffusionXLImg2ImgPipeline
-                _bewerk_pijplijnen[soort] = klasse.from_pipe(basis)
+                _bewerk_pijplijnen[soort] = klasse.from_pipe(basis, dtype=torch.float16)
                 _bewerk_pijplijnen[soort].set_progress_bar_config(disable=True)
             pijplijn = _bewerk_pijplijnen[soort]
 
@@ -601,14 +625,25 @@ def _maak_voorproef(pipe, model: str, latents, frames: int, breedte: int, hoogte
 
     try:
         with torch.no_grad():
-            vae = pipe.vae
+            vae = getattr(taak, "_vae_kopie", None)
+            if vae is None:
+                # Een eigen kopie van de VAE op de CPU (float32): de echte staat soms op de GPU en wordt door de offload-haken
+                # heen en weer gezet, en de GPU zit vol met het videonetwerk.
+                orig = pipe.vae
+                vae = type(orig).from_config(orig.config)
+                vae.load_state_dict({k: v.detach().cpu().float() for k, v in orig.state_dict().items()})
+                vae = vae.to(torch.float32).eval()
+                if hasattr(vae, "enable_tiling"):
+                    vae.enable_tiling()
+                taak._vae_kopie = vae
             if model == "wan":
                 z = vae.config.z_dim
                 gemiddeld = torch.tensor(vae.config.latents_mean).view(1, z, 1, 1, 1)
                 spreiding = 1.0 / torch.tensor(vae.config.latents_std).view(1, z, 1, 1, 1)
                 lat = latents / spreiding + gemiddeld
                 t = lat.shape[2] // 2
-                uit = vae.decode(lat[:, :, t : t + 1].to(torch.float32), return_dict=False)[0]
+                # _decode en niet decode: decode vuurt de offload-haak af, die dan het videonetwerk van de GPU haalt midden in het maken.
+                uit = vae._decode(lat[:, :, t : t + 1].to(vae.dtype)).sample
             else:
                 tijd = (frames - 1) // pipe.vae_temporal_compression_ratio + 1
                 lat = pipe._unpack_latents(
@@ -622,7 +657,7 @@ def _maak_voorproef(pipe, model: str, latents, frames: int, breedte: int, hoogte
                 lat = pipe._denormalize_latents(lat, vae.latents_mean.cpu(), vae.latents_std.cpu(), vae.config.scaling_factor)
                 t = lat.shape[2] // 2
                 temb = torch.tensor([0.03]).to(vae.dtype) if vae.config.timestep_conditioning else None
-                uit = vae.decode(lat[:, :, t : t + 1].to(vae.dtype), temb, return_dict=False)[0]
+                uit = vae._decode(lat[:, :, t : t + 1].to(vae.dtype), temb).sample
             beeld = uit[0, :, 0] if uit.dim() == 5 else uit[0]
             beeld = ((beeld.float().clamp(-1, 1) + 1) / 2 * 255).byte().permute(1, 2, 0).numpy()
         nr = taak.voorproef_nr + 1
@@ -681,7 +716,8 @@ def _draai_video(taak: Taak) -> None:
                     # Het eindbeeld wordt zo gedecodeerd, met dezelfde VAE: eerst het voorproefje afmaken.
                     if bezig:
                         voorproef_draad[0].join(timeout=180)
-                elif (i + 1) % 4 == 0 and not bezig and "latents" in kwargs:
+                # Pas vanaf stap 8 (daarvoor is het alleen ruis); daarna zodra de vorige klaar is.
+                elif i + 1 >= 8 and not bezig and "latents" in kwargs:
                     lat = kwargs["latents"].detach().float().cpu()
                     voorproef_draad[:] = [
                         threading.Thread(
@@ -715,6 +751,7 @@ def _draai_video(taak: Taak) -> None:
 
             taak.stap = "Video opslaan…"
             taak.voorproef = None
+            taak._vae_kopie = None
             for oud in map_.glob("voorproef_*.jpg"):
                 oud.unlink(missing_ok=True)
             pad = map_ / "video.mp4"
@@ -1166,7 +1203,8 @@ _laatst_gebruikt = time.monotonic()
 
 
 def _draai(taak: Taak) -> None:
-    global _laatst_gebruikt
+    global _laatst_gebruikt, _vraag_model
+    _vraag_model = taak.opdracht.beeldmodel
     try:
         if taak.opdracht.soort == "cast":
             _draai_cast(taak)
@@ -1271,6 +1309,7 @@ def health() -> dict[str, Any]:
         "model_geladen": _pipe is not None,
         "video_model_geladen": _video_pipe is not None,
         "video_model": _video_model,
+        "beeld_model": _pipe_model,
         "ontlaad_na": ONTLAAD_NA,
         "cuda": cuda,
         "gpu": gpu,

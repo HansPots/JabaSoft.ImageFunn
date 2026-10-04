@@ -179,9 +179,9 @@ public partial class TekstNaarBeeld
         {
             // De prompt van het beeld bijwerken met de wijziging; het beeldmodel leest alleen Engels.
             StatusText.Text = "Wijziging verwerken in de prompt…";
-            var basis = _huidigePrompt ?? PromptBox.Text.Trim();
+            var basis = _sessie?.BasisPrompt ?? _huidigePrompt ?? PromptBox.Text.Trim();
             var (nieuw, fout) = await _verbeteraar.VerbeterAsync(
-                $"ORIGINAL PROMPT: {basis}\nCHANGE REQUEST: {wijziging}", CancellationToken.None, Promptsoort.Bewerk);
+                $"ORIGINAL PROMPT: {basis}\nCHANGE REQUESTS:\n{WijzigingenTekst(wijziging)}", CancellationToken.None, Promptsoort.Bewerk);
             var prompt = nieuw ?? $"{basis}, {wijziging}";
             if (nieuw is null)
             {
@@ -201,6 +201,7 @@ public partial class TekstNaarBeeld
             var stijl = Beeldstijl.Van((string)((ComboBoxItem)StijlKeuze.SelectedItem).Tag);
             var jobId = await _service.StartJobAsync(new BeeldOpdracht
             {
+                Beeldmodel = (string)((ComboBoxItem)ModelKeuze.SelectedItem).Tag,
                 Prompt = prompt,
                 Negatief = stijl.Negatief,
                 BronBeeld = _huidigBestand,
@@ -217,6 +218,7 @@ public partial class TekstNaarBeeld
 
                 if (status.IsKlaar && status.Bestand is { } bestand)
                 {
+                    VoegVersieToe(bestand, prompt, wijziging, gebiedAan);
                     Toon(bestand, prompt);
                     WijzigBox.Text = string.Empty;
                     StatusText.Text = $"Bijgestuurd - seed {status.Seed}. Het origineel staat nog in de galerij. Prompt: {prompt}";

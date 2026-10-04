@@ -123,6 +123,7 @@ public partial class TekstNaarBeeld : UserControl
 
             var jobId = await _service.StartJobAsync(new BeeldOpdracht
             {
+                Beeldmodel = (string)((ComboBoxItem)ModelKeuze.SelectedItem).Tag,
                 Negatief = stijl.Negatief,
                 Prompt = beeldPrompt,
                 Breedte = int.Parse(formaat[0]),
@@ -177,6 +178,7 @@ public partial class TekstNaarBeeld : UserControl
 
         Resultaat.Source = beeld;
         _huidigePrompt = prompt;
+        ZetSessie(bestand, prompt);
         BijstuurKaart.Visibility = Visibility.Visible;
         Tekenvlak.Strokes.Clear();
         LegeTekst.Visibility = Visibility.Collapsed;
@@ -184,6 +186,7 @@ public partial class TekstNaarBeeld : UserControl
         OpslaanButton.IsEnabled = true;
         NaarTekstButton.IsEnabled = true;
         AnimeerButton.IsEnabled = true;
+        NaarFilmButton.IsEnabled = true;
     }
 
     /// <summary>Laadt een bestand zonder het vast te houden; decodeBreedte houdt miniaturen klein in het geheugen.</summary>
@@ -307,6 +310,8 @@ public partial class TekstNaarBeeld : UserControl
         {
             _huidigBestand = null;
             _huidigePrompt = null;
+            WisSessie();
+            NaarFilmButton.IsEnabled = false;
             BijstuurKaart.Visibility = Visibility.Collapsed;
             Resultaat.Source = null;
             LegeTekst.Visibility = Visibility.Visible;

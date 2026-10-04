@@ -1,4 +1,4 @@
-INFO:     Started server process [33276]
+INFO:     Started server process [10920]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:5330 (Press CTRL+C to quit)
@@ -8,30 +8,35 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
 C:\Repos\JabaSoft.ImageFunn\ImageFunn.Image\.venv\Lib\site-packages\diffusers\utils\deprecation_utils.py:23: FutureWarning: `torch_dtype` is deprecated and will be removed in version 1.0.0. Please use `dtype` instead.
   deprecate("torch_dtype", "1.0.0", _TORCH_DTYPE_DEPRECATION_MESSAGE)
-Loading pipeline components...:   0%|          | 0/5 [00:00<?, ?it/s]
+Loading pipeline components...:   0%|          | 0/5 [00:00<?, ?it/s]Loading pipeline components...:  20%|██        | 1/5 [00:01<00:06,  1.64s/it]
 Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s][A
-Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:06,  1.59s/it][A
-Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:04,  1.64s/it][A
-Loading checkpoint shards:  60%|██████    | 3/5 [00:04<00:03,  1.68s/it][A
-Loading checkpoint shards:  80%|████████  | 4/5 [00:08<00:02,  2.44s/it][A
-Loading checkpoint shards: 100%|██████████| 5/5 [00:08<00:00,  1.64s/it][ALoading checkpoint shards: 100%|██████████| 5/5 [00:08<00:00,  1.76s/it]
-Loading pipeline components...:  20%|██        | 1/5 [00:08<00:35,  8.94s/it]
+Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:06,  1.69s/it][A
+Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.69s/it][A
+Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.73s/it][A
+Loading checkpoint shards:  80%|████████  | 4/5 [00:12<00:03,  3.88s/it][A
+Loading checkpoint shards: 100%|██████████| 5/5 [00:12<00:00,  2.56s/it][ALoading checkpoint shards: 100%|██████████| 5/5 [00:12<00:00,  2.51s/it]
+Loading pipeline components...:  60%|██████    | 3/5 [00:14<00:10,  5.10s/it]
 Loading weights:   0%|          | 0/242 [00:00<?, ?it/s][A
-Loading weights:   1%|          | 2/242 [00:01<01:20,  2.98it/s][A
-Loading weights:   1%|          | 3/242 [00:02<02:59,  1.33it/s][A
-Loading weights:   2%|▏         | 4/242 [00:02<03:04,  1.29it/s][A
-Loading weights:   2%|▏         | 5/242 [00:03<02:14,  1.76it/s][A
-Loading weights:   2%|▏         | 6/242 [00:04<02:44,  1.43it/s][A
-Loading weights:   3%|▎         | 7/242 [00:06<03:58,  1.01s/it][A
-Loading weights:   3%|▎         | 8/242 [00:06<03:35,  1.09it/s][A
-Loading weights:   4%|▎         | 9/242 [00:07<03:59,  1.03s/it][A
-Loading weights:   4%|▍         | 10/242 [00:08<03:50,  1.00it/s][A
-Loading weights:   5%|▍         | 11/242 [00:08<03:03,  1.26it/s][A
-Loading weights:   5%|▍         | 12/242 [00:09<02:41,  1.43it/s][A
-Loading weights:   5%|▌         | 13/242 [00:11<03:49,  1.00s/it][A
-Loading weights:   6%|▌         | 14/242 [00:12<03:48,  1.00s/it][A
-Loading weights:   6%|▌         | 15/242 [00:16<07:49,  2.07s/it][A
-Loading weights:   7%|▋         | 16/242 [00:16<05:39,  1.50s/it][ALoading weights: 100%|██████████| 242/242 [00:16<00:00, 14.38it/s]
-Loading pipeline components...:  40%|████      | 2/5 [00:27<00:44, 14.75s/it]Loading pipeline components...:  60%|██████    | 3/5 [00:30<00:18,  9.26s/it]Loading pipeline components...: 100%|██████████| 5/5 [00:30<00:00,  6.11s/it]
+Loading weights:   1%|          | 3/242 [00:00<00:11, 21.07it/s][A
+Loading weights:   2%|▏         | 6/242 [00:01<00:52,  4.52it/s][A
+Loading weights:   3%|▎         | 8/242 [00:01<00:51,  4.52it/s][A
+Loading weights:   4%|▎         | 9/242 [00:02<01:08,  3.41it/s][A
+Loading weights:   4%|▍         | 10/242 [00:02<01:28,  2.61it/s][A
+Loading weights:   5%|▍         | 11/242 [00:03<01:42,  2.25it/s][A
+Loading weights:   5%|▍         | 12/242 [00:04<01:49,  2.10it/s][A
+Loading weights:   5%|▌         | 13/242 [00:05<02:17,  1.66it/s][A
+Loading weights:   6%|▌         | 14/242 [00:07<03:55,  1.03s/it][A
+Loading weights:   6%|▌         | 15/242 [00:08<03:58,  1.05s/it][A
+Loading weights:   7%|▋         | 16/242 [00:09<03:55,  1.04s/it][A
+Loading weights:   7%|▋         | 17/242 [00:10<03:37,  1.03it/s][A
+Loading weights:   7%|▋         | 18/242 [00:10<02:57,  1.26it/s][A
+Loading weights:   8%|▊         | 19/242 [00:12<03:42,  1.00it/s][A
+Loading weights:   8%|▊         | 20/242 [00:12<02:53,  1.28it/s][A
+Loading weights:   9%|▊         | 21/242 [00:13<02:39,  1.39it/s][A
+Loading weights:   9%|▉         | 22/242 [00:21<11:28,  3.13s/it][ALoading weights: 100%|██████████| 242/242 [00:21<00:00, 11.21it/s]
+Loading pipeline components...: 100%|██████████| 5/5 [00:37<00:00,  8.49s/it]Loading pipeline components...: 100%|██████████| 5/5 [00:37<00:00,  7.53s/it]
 There are modules in WanTransformer3DModel that should be kept in float32: ['rope', 'time_embedder', 'scale_shift_table', 'norm1', 'norm2', 'norm3']. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
 There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.

@@ -546,6 +546,7 @@ public partial class FilmMaker : UserControl
             Modus = TagVan(ModusKeuze),
             Overgang = TagVan(OvergangKeuze),
             Stijl = StijlVoorService(),
+            Beeldmodel = TagVan(BeeldmodelKeuze),
             Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Referentie = referentie,
@@ -1075,6 +1076,8 @@ public partial class FilmMaker : UserControl
 
         public string Videomodel { get; set; } = "ltx";
 
+        public string Beeldmodel { get; set; } = "juggernaut";
+
         public string Formaat { get; set; } = "704x480";
 
         public string Beeldstijl { get; set; } = "realistisch";
@@ -1101,6 +1104,7 @@ public partial class FilmMaker : UserControl
             Modus = TagVan(ModusKeuze),
             Overgang = TagVan(OvergangKeuze),
             Videomodel = TagVan(VideomodelKeuze),
+            Beeldmodel = TagVan(BeeldmodelKeuze),
             Formaat = TagVan(FormaatKeuze),
             Beeldstijl = TagVan(BeeldstijlKeuze),
             CastGebruik = CastGebruikBox.IsChecked == true,
@@ -1133,6 +1137,7 @@ public partial class FilmMaker : UserControl
             KiesTag(ModusKeuze, verhaal.Modus);
             KiesTag(OvergangKeuze, verhaal.Overgang);
             KiesTag(VideomodelKeuze, verhaal.Videomodel);
+            KiesTag(BeeldmodelKeuze, verhaal.Beeldmodel);
             KiesTag(FormaatKeuze, verhaal.Formaat);
             KiesTag(BeeldstijlKeuze, verhaal.Beeldstijl);
             _cast = verhaal.Cast;

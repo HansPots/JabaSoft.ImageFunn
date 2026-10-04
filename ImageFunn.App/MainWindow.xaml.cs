@@ -62,6 +62,7 @@ public partial class MainWindow : Window
         _beeldNaarVideo = new InhoudSchermen.BeeldNaarVideo(_broker);
         _tekstNaarVideo = new InhoudSchermen.TekstNaarVideo(_broker);
         _filmMaker = new InhoudSchermen.FilmMaker(_broker);
+        _tekstNaarBeeld.NaarFilm += (_, item) => _filmMaker.NeemCastOver(item);
         _tekstNaarBeeld.AnimatieDoorgeven += (_, pad) =>
         {
             _beeldNaarVideo.ZetBron(pad);

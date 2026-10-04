@@ -155,6 +155,7 @@ public partial class FilmMaker
             Hoogte = int.Parse(formaat[1]),
             Modus = TagVan(ModusKeuze),
             Stijl = StijlVoorService(),
+            Beeldmodel = TagVan(BeeldmodelKeuze),
             Negatief = NegatiefVoorService(),
             Prompt = IdeeBox.Text.Trim(),
             Seed = Random.Shared.Next(),

@@ -72,7 +72,13 @@
 
                 <TextBlock Grid.Row="2" Text="Formaat" Foreground="{DynamicResource TextMutedBrush}"
                            FontSize="{DynamicResource FontSizeSmall}" Margin="0,14,0,6" />
-                <Grid Grid.Row="3">
+                <StackPanel Grid.Row="3">
+                    <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,0,0,8"
+                              ToolTip="Welk model het beeld maakt. Beide zijn realistisch maar hebben een eigen look: probeer dezelfde tekst met allebei.">
+                        <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
+                        <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
+                    </ComboBox>
+                    <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="8" />
@@ -92,6 +98,7 @@
                         <ComboBoxItem Content="Geen (alleen mijn tekst)" Tag="geen" />
                     </ComboBox>
                 </Grid>
+                </StackPanel>
 
                 <CheckBox Grid.Row="4" x:Name="VerbeterBox" IsChecked="True" Margin="0,14,0,0"
                           Content="Prompt automatisch vertalen en verbeteren (aanbevolen)"
@@ -164,6 +171,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -216,6 +225,18 @@
                             </StackPanel>
                         </WrapPanel>
                     </Grid>
+
+                    <StackPanel Grid.Row="3" Grid.ColumnSpan="2" x:Name="AanwijzingenPaneel" Margin="0,10,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Jouw aanwijzingen tot nu toe (aangevinkt telt mee bij de volgende ronde)"
+                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" Margin="0,0,0,4" />
+                        <StackPanel x:Name="AanwijzingenLijst" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4" Grid.ColumnSpan="2" x:Name="VersiesPaneel" Orientation="Horizontal" Margin="0,10,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Versies" VerticalAlignment="Center" Margin="0,0,10,0"
+                                   Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />
+                        <WrapPanel x:Name="VersiesLijst" />
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -224,6 +245,9 @@
                         Style="{DynamicResource AccentButtonStyle}" />
                 <Button x:Name="AnimeerButton" Content="Animeer dit beeld" Click="AnimeerButton_Click" IsEnabled="False"
                         Margin="0,0,10,0" Style="{DynamicResource AccentButtonStyle}" />
+                <Button x:Name="NaarFilmButton" Content="Gebruik in film" Click="NaarFilmButton_Click" IsEnabled="False"
+                        ToolTip="Zet dit beeld in de cast van Film maken, als speler, plek of voorwerp"
+                        Margin="10,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
                 <Button x:Name="NaarTekstButton" Content="Laat dit beeld beschrijven" Click="NaarTekstButton_Click" IsEnabled="False"
                         Margin="10,0,0,0" Style="{DynamicResource AccentButtonStyle}" />
             </StackPanel>

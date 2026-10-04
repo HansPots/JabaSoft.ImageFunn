@@ -39,7 +39,8 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
     private const string BewerkInstructie =
         "You edit a prompt for a text-to-image model. The user gives the ORIGINAL English prompt of an existing image and a " +
         "CHANGE REQUEST in any language (for example: make the person a bit bigger, or add a red bicycle in the background). " +
-        "Return the complete UPDATED English prompt, ONE flowing paragraph of at most 90 words, with the change applied and " +
+        "There can be several change requests, one per line: apply ALL of them. " +
+        "Return the complete UPDATED English prompt, ONE flowing paragraph of at most 90 words, with the changes applied and " +
         "everything else kept as it was (subjects, style words, lighting, setting). Describe the change concretely: for a " +
         "larger person write that the person fills more of the frame, closer to the camera; for an object name it and say where it is. " +
         "Output ONLY the prompt: no quotes, no explanation, no line breaks.";
