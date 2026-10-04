@@ -128,6 +128,8 @@
                 <Grid>
                     <MediaElement x:Name="Speler" LoadedBehavior="Manual" UnloadedBehavior="Manual" Stretch="Uniform"
                                   Margin="8" MediaEnded="Speler_MediaEnded" MediaFailed="Speler_MediaFailed" />
+                    <Image x:Name="VoorproefBeeld" Margin="8" Stretch="Uniform" Visibility="Collapsed"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
                     <TextBlock x:Name="LegeTekst" Text="Hier verschijnt je video"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}" />

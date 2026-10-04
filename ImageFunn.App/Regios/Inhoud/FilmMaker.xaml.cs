@@ -542,6 +542,7 @@ public partial class FilmMaker : UserControl
             Soort = "film",
             Breedte = int.Parse(formaat[0]),
             Hoogte = int.Parse(formaat[1]),
+            Videomodel = TagVan(VideomodelKeuze),
             Modus = TagVan(ModusKeuze),
             Overgang = TagVan(OvergangKeuze),
             Stijl = StijlVoorService(),
@@ -1072,6 +1073,8 @@ public partial class FilmMaker : UserControl
 
         public string Overgang { get; set; } = "zacht";
 
+        public string Videomodel { get; set; } = "ltx";
+
         public string Formaat { get; set; } = "704x480";
 
         public string Beeldstijl { get; set; } = "realistisch";
@@ -1097,6 +1100,7 @@ public partial class FilmMaker : UserControl
             Stijl = StijlBox.Text,
             Modus = TagVan(ModusKeuze),
             Overgang = TagVan(OvergangKeuze),
+            Videomodel = TagVan(VideomodelKeuze),
             Formaat = TagVan(FormaatKeuze),
             Beeldstijl = TagVan(BeeldstijlKeuze),
             CastGebruik = CastGebruikBox.IsChecked == true,
@@ -1128,6 +1132,7 @@ public partial class FilmMaker : UserControl
             StijlBox.Text = verhaal.Stijl;
             KiesTag(ModusKeuze, verhaal.Modus);
             KiesTag(OvergangKeuze, verhaal.Overgang);
+            KiesTag(VideomodelKeuze, verhaal.Videomodel);
             KiesTag(FormaatKeuze, verhaal.Formaat);
             KiesTag(BeeldstijlKeuze, verhaal.Beeldstijl);
             _cast = verhaal.Cast;

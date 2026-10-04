@@ -50,9 +50,9 @@ public partial class FilmMaker
     /// <summary>Hoe sterk een speler, een plek en een voorwerp op hun referentiebeeld moeten lijken, afgeleid van de keuze 'Gelijkenis'.</summary>
     private (double Speler, double Plek, double Voorwerp) CastSterkte() => GelijkenisKeuze.SelectedIndex switch
     {
-        0 => (0.35, 0.35, 0.15),
-        2 => (0.6, 0.5, 0.35),
-        _ => (0.5, 0.45, 0.25),
+        0 => (0.25, 0.25, 0.1),
+        2 => (0.5, 0.45, 0.25),
+        _ => (0.35, 0.35, 0.15),
     };
 
     // ---------------------------------------------------------------- kopie naar de service

@@ -246,6 +246,13 @@ public sealed class BeeldJobStatus
     [JsonPropertyName("cast")]
     public List<CastItem> Cast { get; set; } = [];
 
+    /// <summary>Tijdens het maken van een video: het middelste beeld zoals het er nu uitziet (png/jpg), en een teller die oploopt bij elk nieuw voorproefje.</summary>
+    [JsonPropertyName("voorproef")]
+    public string? Voorproef { get; set; }
+
+    [JsonPropertyName("voorproef_nr")]
+    public int VoorproefNr { get; set; }
+
     /// <summary>Bij een film: "sleutelbeelden" | "model" | "scenes" | "samenvoegen" | "klaar".</summary>
     [JsonPropertyName("fase")]
     public string Fase { get; set; } = string.Empty;

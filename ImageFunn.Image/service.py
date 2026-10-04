@@ -150,6 +150,9 @@ class Taak:
         self.stop = False
         # Bij een film: sleutelbeelden | model | scenes | samenvoegen | klaar
         self.fase = ""
+        # Voorproefje tijdens het maken van een video: het middelste beeld zoals het er op dit moment uitziet.
+        self.voorproef: str | None = None
+        self.voorproef_nr = 0
 
     def als_dict(self) -> dict[str, Any]:
         return {
@@ -174,6 +177,8 @@ class Taak:
             "stijl": self.opdracht.stijl,
             "cast": [c.model_dump() for c in self.opdracht.cast],
             "fase": self.fase,
+            "voorproef": self.voorproef,
+            "voorproef_nr": self.voorproef_nr,
             "foutmelding": self.foutmelding,
         }
 
@@ -585,6 +590,52 @@ def _draai_bewerk(taak: Taak) -> None:
             taak.stap = "Mislukt"
 
 
+def _maak_voorproef(pipe, model: str, latents, frames: int, breedte: int, hoogte: int, taak: Taak, map_: Path) -> None:
+    """
+    Decodeert het middelste beeld uit de tussenstand van het maken en zet het als voorproefje klaar voor de app.
+    Draait op de CPU in een eigen draadje, zodat de GPU doorwerkt; het videonetwerk zelf wordt hier niet gebruikt.
+    Mislukt het, dan blijft het voorproefje gewoon weg en gaat het maken gewoon door.
+    """
+    import torch
+    from PIL import Image
+
+    try:
+        with torch.no_grad():
+            vae = pipe.vae
+            if model == "wan":
+                z = vae.config.z_dim
+                gemiddeld = torch.tensor(vae.config.latents_mean).view(1, z, 1, 1, 1)
+                spreiding = 1.0 / torch.tensor(vae.config.latents_std).view(1, z, 1, 1, 1)
+                lat = latents / spreiding + gemiddeld
+                t = lat.shape[2] // 2
+                uit = vae.decode(lat[:, :, t : t + 1].to(torch.float32), return_dict=False)[0]
+            else:
+                tijd = (frames - 1) // pipe.vae_temporal_compression_ratio + 1
+                lat = pipe._unpack_latents(
+                    latents,
+                    tijd,
+                    hoogte // pipe.vae_spatial_compression_ratio,
+                    breedte // pipe.vae_spatial_compression_ratio,
+                    pipe.transformer_spatial_patch_size,
+                    pipe.transformer_temporal_patch_size,
+                )
+                lat = pipe._denormalize_latents(lat, vae.latents_mean.cpu(), vae.latents_std.cpu(), vae.config.scaling_factor)
+                t = lat.shape[2] // 2
+                temb = torch.tensor([0.03]).to(vae.dtype) if vae.config.timestep_conditioning else None
+                uit = vae.decode(lat[:, :, t : t + 1].to(vae.dtype), temb, return_dict=False)[0]
+            beeld = uit[0, :, 0] if uit.dim() == 5 else uit[0]
+            beeld = ((beeld.float().clamp(-1, 1) + 1) / 2 * 255).byte().permute(1, 2, 0).numpy()
+        nr = taak.voorproef_nr + 1
+        pad = map_ / f"voorproef_{nr}.jpg"
+        Image.fromarray(beeld).save(pad, quality=85)
+        taak.voorproef = str(pad)
+        taak.voorproef_nr = nr
+        if nr > 2:
+            (map_ / f"voorproef_{nr - 2}.jpg").unlink(missing_ok=True)
+    except Exception:  # noqa: BLE001 - een voorproefje is een extraatje
+        traceback.print_exc()
+
+
 def _draai_video(taak: Taak) -> None:
     with _wachtrij_slot:
         taak.status = "bezig"
@@ -618,9 +669,28 @@ def _draai_video(taak: Taak) -> None:
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
 
+            map_ = UITVOER / taak.job_id
+            map_.mkdir(parents=True, exist_ok=True)
+            voorproef_draad: list[threading.Thread] = []
+
             def stap_klaar(_pipe, i, _t, kwargs):
                 taak.voortgang = (i + 1) / stappen
                 taak.stap = f"{'Animeren' if vanaf_beeld else 'Video maken'}: stap {i + 1} van {stappen}"
+                bezig = voorproef_draad and voorproef_draad[0].is_alive()
+                if i + 1 >= stappen:
+                    # Het eindbeeld wordt zo gedecodeerd, met dezelfde VAE: eerst het voorproefje afmaken.
+                    if bezig:
+                        voorproef_draad[0].join(timeout=180)
+                elif (i + 1) % 4 == 0 and not bezig and "latents" in kwargs:
+                    lat = kwargs["latents"].detach().float().cpu()
+                    voorproef_draad[:] = [
+                        threading.Thread(
+                            target=_maak_voorproef,
+                            args=(pipe, o.videomodel, lat, frames, breedte, hoogte, taak, map_),
+                            daemon=True,
+                        )
+                    ]
+                    voorproef_draad[0].start()
                 return kwargs
 
             taak.stap = "Animeren…" if vanaf_beeld else "Video maken…"
@@ -644,8 +714,9 @@ def _draai_video(taak: Taak) -> None:
             ).frames[0]
 
             taak.stap = "Video opslaan…"
-            map_ = UITVOER / taak.job_id
-            map_.mkdir(parents=True, exist_ok=True)
+            taak.voorproef = None
+            for oud in map_.glob("voorproef_*.jpg"):
+                oud.unlink(missing_ok=True)
             pad = map_ / "video.mp4"
             export_to_video(beelden, str(pad), fps=24)
             taak.bestand = str(pad)
@@ -783,7 +854,8 @@ def _maak_sleutelbeelden(taak: "Taak", volgorde: list[int], scenemap: Path, basi
                 na_beeld(k, st, totaal)
 
         beeld = _render_sleutelbeeld(
-            stijl + scenes[i].beeld,
+            # De scène eerst: het beeldmodel leest maar ±77 woorddelen en kapt de rest af.
+            scenes[i].beeld + (", " + stijl.rstrip(", ") if stijl else ""),
             o.breedte,
             o.hoogte,
             basis_seed + i,
@@ -967,9 +1039,10 @@ def _draai_film(taak: Taak) -> None:
             if te_doen:
                 taak.fase = "model"
                 taak.stap = "Videomodel laden… (de eerste keer duurt dit langer)"
-                pipe = _laad_videopijplijn(lambda t: setattr(taak, "stap", t), True)
+                pipe = _laad_videopijplijn(lambda t: setattr(taak, "stap", t), True, o.videomodel)
                 taak.fase = "scenes"
 
+            wan = o.videomodel == "wan"
             vorige_laatste: Image.Image | None = None
             for i, sc in enumerate(scenes):
                 controleer_stop()
@@ -994,9 +1067,10 @@ def _draai_film(taak: Taak) -> None:
 
                 breedte = max(256, o.breedte // 32 * 32)
                 hoogte = max(256, o.hoogte // 32 * 32)
-                frames = sc.seconden * 24 // 8 * 8 + 1
+                blok = 4 if wan else 8  # het aantal beelden is 4n+1 (Wan) of 8n+1 (LTX)
+                frames = sc.seconden * 24 // blok * blok + 1
                 start = start.convert("RGB").resize((breedte, hoogte), Image.LANCZOS)
-                stappen = 40
+                stappen = 30 if wan else 40
                 seed = basis_seed + i
                 sc.seed = seed
                 teller = f"Scène {i + 1} van {n}"
@@ -1018,8 +1092,7 @@ def _draai_film(taak: Taak) -> None:
                     height=hoogte,
                     num_frames=frames,
                     num_inference_steps=stappen,
-                    decode_timestep=0.03,
-                    decode_noise_scale=0.025,
+                    **({"guidance_scale": 5.0} if wan else {"decode_timestep": 0.03, "decode_noise_scale": 0.025}),
                     generator=torch.Generator("cuda").manual_seed(seed),
                     callback_on_step_end=stap_klaar,
                 ).frames[0]

@@ -163,11 +163,18 @@ public partial class BeeldNaarVideo : UserControl
                 Hoogte = int.Parse(formaat[1]),
             });
 
+            var voorproefNr = 0;
             while (true)
             {
                 var status = await _service.GetStatusAsync(jobId);
                 StatusText.Text = status.Stap;
                 Voortgang.Value = status.Voortgang;
+                if (status.VoorproefNr != voorproefNr)
+                {
+                    voorproefNr = status.VoorproefNr;
+                    LegeTekst.Visibility = Visibility.Collapsed;
+                    VoorproefWeergave.Toon(VoorproefBeeld, status.Voorproef);
+                }
 
                 if (status.IsKlaar && status.Bestand is { } bestand)
                 {
@@ -195,6 +202,7 @@ public partial class BeeldNaarVideo : UserControl
             MaakButton.IsEnabled = true;
             CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
+            VoorproefWeergave.Verberg(VoorproefBeeld);
         }
     }
 
