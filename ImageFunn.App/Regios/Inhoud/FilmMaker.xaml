@@ -95,6 +95,8 @@
                                 <ComboBoxItem Content="Filmisch" Tag="filmisch" />
                                 <ComboBoxItem Content="Illustratie" Tag="illustratie" />
                                 <ComboBoxItem Content="Tekenfilm / animatie" Tag="tekenfilm" />
+                                <ComboBoxItem Content="Anime" Tag="anime" />
+                                <ComboBoxItem Content="Manga (zwart-wit)" Tag="manga" />
                                 <ComboBoxItem Content="Geen (alleen mijn tekst)" Tag="geen" />
                             </ComboBox>
 
@@ -115,9 +117,10 @@
                                 <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
                             </ComboBox>
                             <ComboBox x:Name="VideomodelKeuze" SelectedIndex="0" Margin="0,8,0,0"
-                                      ToolTip="LTX is snel, maar de beweging loopt bij langere scènes vaak uit elkaar. Wan 2.2 beweegt echter en blijft langer netjes, maar is veel trager en gebruikt bijna al je werkgeheugen: sluit andere programma's.">
-                                <ComboBoxItem Content="Videomodel: LTX-Video (snel)" Tag="ltx" />
+                                      ToolTip="Wan 2.2 beweegt echt en blijft bij langere scènes netjes, maar gebruikt bijna al je werkgeheugen: sluit andere programma's.">
                                 <ComboBoxItem Content="Videomodel: Wan 2.2 (echter, trager)" Tag="wan" />
+                                <ComboBoxItem Content="Videomodel: SANA-Video (snel, licht)" Tag="sana" />
+                                <ComboBoxItem Content="Videomodel: Kandinsky 5 Lite (snel)" Tag="kandinsky" />
                             </ComboBox>
 
                             <Rectangle Height="1" Fill="{DynamicResource BorderBrush}" Margin="0,18,0,14" />

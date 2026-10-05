@@ -12,7 +12,7 @@ namespace ImageFunn.App.Regios.Inhoud;
 /// Interaction logic for TekstNaarVideo.xaml - see that file for what it looks like.
 ///
 /// Stuurt de lokale beeldservice aan met een video-opdracht ZONDER
-/// bronbeeld: de service maakt de video dan uit alleen de tekst (LTX-Video,
+/// bronbeeld: de service maakt de video dan uit alleen de tekst (het gekozen videomodel,
 /// zie service.py). Voortgang peilen en bij "klaar" de mp4 afspelen.
 /// </summary>
 public partial class TekstNaarVideo : UserControl
@@ -35,6 +35,62 @@ public partial class TekstNaarVideo : UserControl
         InitializeComponent();
         _verbeteraar = new Promptverbeteraar(broker);
         Loaded += async (_, _) => await VulGalerijAsync();
+    }
+
+    // Elk videomodel heeft zijn eigen goede formaten (zie videomodellen.py voor de afrondingsmaat).
+    private static readonly Dictionary<string, (string Naam, string Tag)[]> Formaten = new()
+    {
+        ["wan"] = [("Liggend 704 × 480", "704x480"), ("Staand 480 × 704", "480x704"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
+        ["sana"] = [("Liggend 832 × 480", "832x480"), ("Staand 480 × 832", "480x832"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
+        ["kandinsky"] = [("Liggend 768 × 512", "768x512"), ("Staand 512 × 768", "512x768"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
+    };
+
+    // Beelden per seconde per model (zie videomodellen.py): bepaalt hoeveel seconden een aantal beelden duurt.
+    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["sana"] = 16, ["kandinsky"] = 24 };
+
+    private static readonly (string Naam, string Tag)[] Duren = [("Kort", "49"), ("Normaal", "97"), ("Lang", "145")];
+
+    private void VulDuurKeuze(string model)
+    {
+        var fps = BeeldenPerSeconde.GetValueOrDefault(model, 24);
+        var vorige = DuurKeuze.SelectedIndex < 0 ? 1 : DuurKeuze.SelectedIndex;
+        DuurKeuze.Items.Clear();
+        foreach (var (naam, tag) in Duren)
+        {
+            DuurKeuze.Items.Add(new ComboBoxItem { Content = $"{naam} (±{Math.Round(int.Parse(tag) / (double)fps)} sec)", Tag = tag });
+        }
+
+        DuurKeuze.SelectedIndex = vorige;
+    }
+
+    private void ModelKeuze_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DuurKeuze is not null && ModelKeuze.SelectedItem is ComboBoxItem { Tag: string gekozen })
+        {
+            VulDuurKeuze(gekozen);
+        }
+
+        if (FormaatKeuze is null || ModelKeuze.SelectedItem is not ComboBoxItem { Tag: string model } || !Formaten.TryGetValue(model, out var lijst))
+        {
+            return;
+        }
+
+        var vorige = (FormaatKeuze.SelectedItem as ComboBoxItem)?.Tag as string;
+        FormaatKeuze.Items.Clear();
+        foreach (var (naam, tag) in lijst)
+        {
+            FormaatKeuze.Items.Add(new ComboBoxItem { Content = naam, Tag = tag });
+        }
+
+        // Dezelfde vorm (liggend/staand/vierkant) als eerder gekozen, anders de eerste.
+        FormaatKeuze.SelectedIndex = vorige is null ? 0 : VormIndex(vorige);
+    }
+
+    private static int VormIndex(string tag)
+    {
+        var d = tag.Split('x');
+        var (b, h) = (int.Parse(d[0]), int.Parse(d[1]));
+        return b > h ? 0 : b < h ? 1 : b >= 512 ? 2 : 3;
     }
 
     private void CleanButton_Click(object sender, RoutedEventArgs e)

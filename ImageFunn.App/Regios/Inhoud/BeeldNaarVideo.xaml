@@ -20,7 +20,7 @@
         Inhoud-regio component: het scherm waar "Beeld naar video" in het
         menu naartoe schakelt. Links het beeld dat bewogen moet worden en
         hoe, rechts de gemaakte video (herhalend afgespeeld). De video
-        wordt gemaakt door LTX-Video in de lokale beeldservice (zie
+        wordt gemaakt door het gekozen videomodel in de lokale beeldservice (zie
         ImageFunn.Image/service.py); dat duurt enkele minuten, dus dit
         scherm peilt de voortgang net als Tekst naar beeld.
     -->
@@ -83,10 +83,11 @@
                 </Border>
 
                 <StackPanel Grid.Row="3">
-                    <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,14,0,0"
-                              ToolTip="LTX is snel maar beweegt vooral de camera. Wan 2.2 beweegt personen en dingen echter, maar is veel trager en de eerste keer wordt er ±30 GB aan model geladen.">
-                        <ComboBoxItem Content="Videomodel: LTX-Video (snel)" Tag="ltx" />
+                    <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,14,0,0" SelectionChanged="ModelKeuze_SelectionChanged"
+                              ToolTip="Wan 2.2: beweegt personen en dingen echt, maar is traag en gebruikt veel geheugen. SANA-Video: snel en licht. Kandinsky 5 Lite: snel, 24 beelden per seconde. HunyuanVideo 1.5: de beste kwaliteit, maar het zwaarst en trager (kan alleen een beeld laten bewegen).">
                         <ComboBoxItem Content="Videomodel: Wan 2.2 (echtere beweging, trager)" Tag="wan" />
+                        <ComboBoxItem Content="Videomodel: SANA-Video (snel, licht)" Tag="sana" />
+                        <ComboBoxItem Content="Videomodel: Kandinsky 5 Lite (snel)" Tag="kandinsky" />
                     </ComboBox>
                     <Grid Margin="0,14,0,0">
                     <Grid.ColumnDefinitions>

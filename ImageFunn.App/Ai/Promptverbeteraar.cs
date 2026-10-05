@@ -46,7 +46,7 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
         "Output ONLY the prompt: no quotes, no explanation, no line breaks.";
 
     private const string SceneInstructie =
-        "You write prompts for a text-to-video model (LTX-Video). The user describes, in any language, a short " +
+        "You write prompts for a text-to-video model. The user describes, in any language, a short " +
         "video scene. Translate it to English and write ONE flowing paragraph of at most 90 words in present " +
         "tense: start with the main subject and its action, then the setting and background, then lighting, " +
         "colours and mood, then the camera movement (for example: slow push-in, gentle pan, tracking shot, static) " +
@@ -54,7 +54,7 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
         "new subjects. Output ONLY the prompt: no quotes, no explanation, no line breaks.";
 
     private const string BewegingInstructie =
-        "You write motion prompts for an image-to-video model (LTX-Video). The user describes, in any language, how " +
+        "You write motion prompts for an image-to-video model. The user describes, in any language, how " +
         "a still image should come to life. Translate it to English and write ONE flowing paragraph of at most 60 " +
         "words in present tense: first what moves and how (subject action, hair, cloth, water, clouds, light), then " +
         "the camera movement (for example: slow push-in, gentle pan, static), then the pace and mood. Keep it " +

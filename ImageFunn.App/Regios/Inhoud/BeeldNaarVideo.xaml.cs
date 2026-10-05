@@ -15,7 +15,7 @@ namespace ImageFunn.App.Regios.Inhoud;
 ///
 /// Stuurt de lokale beeldservice aan met een video-opdracht: bronbeeld +
 /// bewegingsomschrijving erheen, voortgang peilen, en bij "klaar" de mp4
-/// afspelen. De service (LTX-Video, zie service.py) doet het echte werk.
+/// afspelen. De service (zie service.py en videomodellen.py) doet het echte werk.
 /// </summary>
 public partial class BeeldNaarVideo : UserControl
 {
@@ -111,6 +111,29 @@ public partial class BeeldNaarVideo : UserControl
     {
         _clean = true;
         MaakButton_Click(sender, e);
+    }
+
+    // Beelden per seconde per model (zie videomodellen.py): bepaalt hoeveel seconden een aantal beelden duurt.
+    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["sana"] = 16, ["kandinsky"] = 24 };
+
+    private static readonly (string Naam, string Tag)[] Duren = [("Kort", "49"), ("Normaal", "97"), ("Lang", "145")];
+
+    private void ModelKeuze_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DuurKeuze is null || ModelKeuze.SelectedItem is not ComboBoxItem { Tag: string model })
+        {
+            return;
+        }
+
+        var fps = BeeldenPerSeconde.GetValueOrDefault(model, 24);
+        var vorige = DuurKeuze.SelectedIndex < 0 ? 1 : DuurKeuze.SelectedIndex;
+        DuurKeuze.Items.Clear();
+        foreach (var (naam, tag) in Duren)
+        {
+            DuurKeuze.Items.Add(new ComboBoxItem { Content = $"{naam} (±{Math.Round(int.Parse(tag) / (double)fps)} sec)", Tag = tag });
+        }
+
+        DuurKeuze.SelectedIndex = vorige;
     }
 
     private async void MaakButton_Click(object sender, RoutedEventArgs e)

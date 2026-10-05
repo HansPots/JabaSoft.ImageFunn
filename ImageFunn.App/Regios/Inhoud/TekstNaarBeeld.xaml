@@ -95,6 +95,8 @@
                         <ComboBoxItem Content="Filmisch" Tag="filmisch" />
                         <ComboBoxItem Content="Illustratie" Tag="illustratie" />
                         <ComboBoxItem Content="Tekenfilm / animatie" Tag="tekenfilm" />
+                        <ComboBoxItem Content="Anime" Tag="anime" />
+                        <ComboBoxItem Content="Manga (zwart-wit)" Tag="manga" />
                         <ComboBoxItem Content="Geen (alleen mijn tekst)" Tag="geen" />
                     </ComboBox>
                 </Grid>

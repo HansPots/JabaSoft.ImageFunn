@@ -23,6 +23,12 @@ public sealed record Beeldstijl(string Tag, string Naam, string Prefix, string N
         new("tekenfilm", "Tekenfilm / animatie",
             "stylized 3D animated movie look, soft studio lighting, appealing character design, high detail",
             "photo, realistic, blurry, low quality, text, watermark"),
+        new("anime", "Anime",
+            "anime style, high quality anime illustration, clean line art, vibrant cel shading, expressive eyes, detailed background",
+            "photo, realistic, 3d render, blurry, low quality, bad anatomy, extra fingers, text, watermark"),
+        new("manga", "Manga (zwart-wit)",
+            "manga style, black and white manga panel, detailed ink line art, screentone shading, dynamic composition, high contrast",
+            "photo, realistic, 3d render, colour, color, blurry, low quality, bad anatomy, extra fingers, text, watermark"),
         new("geen", "Geen (alleen mijn tekst)", string.Empty, "blurry, low quality, text, watermark"),
     ];
 

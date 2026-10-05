@@ -37,9 +37,9 @@ public sealed class BeeldOpdracht
     [JsonPropertyName("frames")]
     public int Frames { get; set; } = 97;
 
-    /// <summary>"ltx" (snel) of "wan" (Wan 2.2: echtere beweging, trager) - alleen bij soort "video".</summary>
+    /// <summary>Sleutel van het videomodel (zie ImageFunn.Image/videomodellen.py) - bij soort "video" en "film".</summary>
     [JsonPropertyName("videomodel")]
-    public string Videomodel { get; set; } = "ltx";
+    public string Videomodel { get; set; } = "wan";
 
     /// <summary>"juggernaut" of "realvis"; leeg = de standaard van de service. Geldt voor beelden, sleutelbeelden, cast en bijsturen.</summary>
     [JsonPropertyName("beeldmodel")]

@@ -1074,7 +1074,7 @@ public partial class FilmMaker : UserControl
 
         public string Overgang { get; set; } = "zacht";
 
-        public string Videomodel { get; set; } = "ltx";
+        public string Videomodel { get; set; } = "wan";
 
         public string Beeldmodel { get; set; } = "realvis";
 
