@@ -201,13 +201,28 @@ _ip_beschikbaar = False  # is de IP-Adapter (voorbeeldbeeld voor dezelfde person
 _pipe_slot = threading.Lock()
 
 
+def _lmstudio_modelmap() -> Path:
+    """De modelmap van LM Studio: 'downloadsFolder' uit ~/.lmstudio/settings.json (die kun je in LM Studio
+    verzetten, bijv. naar D:\\Jabasoft\\modellen\\lmstudio), anders de standaardplek ~/.lmstudio/models."""
+    standaard = Path.home() / ".lmstudio" / "models"
+    try:
+        instellingen = json.loads((Path.home() / ".lmstudio" / "settings.json").read_text(encoding="utf-8"))
+        map_ = instellingen.get("downloadsFolder")
+        if map_ and Path(map_).is_dir():
+            return Path(map_)
+    except (OSError, ValueError):
+        pass
+    return standaard
+
+
 def _zoek_juggernaut_gguf() -> Path | None:
     """Het GGUF-bestand van Juggernaut: via IMAGEFUNN_JUGGERNAUT_GGUF, anders in de modelmap van LM Studio."""
     eigen = os.environ.get("IMAGEFUNN_JUGGERNAUT_GGUF")
     if eigen and Path(eigen).is_file():
         return Path(eigen)
-    for pad in (Path.home() / ".lmstudio" / "models").glob("**/juggernautXL*.gguf"):
-        return pad
+    for map_ in dict.fromkeys((_lmstudio_modelmap(), Path.home() / ".lmstudio" / "models")):
+        for pad in map_.glob("**/juggernautXL*.gguf"):
+            return pad
     return None
 
 
