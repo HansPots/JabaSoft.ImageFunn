@@ -1,7 +1,5 @@
-using System.IO;
-using System.Text.Json;
-using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Controls;
 using Jabasoft.Base;
 using Jabasoft.Base.AiBroker;
 using Jabasoft.Base.Health;
@@ -12,17 +10,22 @@ using InhoudSchermen = ImageFunn.App.Regios.Inhoud;
 namespace ImageFunn.App;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// ImageFunn als onderdeel van Jabasoft: de hele paginaschil van deze app,
+/// die Jabasoft in zijn eigen venster zet. Was eerst een eigen venster in
+/// een eigen proces; nu blijft alles in dezelfde applicatie.
 ///
 /// Zelfde opbouw als Jabasoft.App/MainWindow.xaml.cs: header, footer, menu
-/// en actierail werken hier op precies dezelfde manier.
+/// en actierail werken hier op precies dezelfde manier. Wat bij een venster
+/// hoort (maximaliseren, venstermaat onthouden) regelt Jabasoft.
 /// </summary>
-public partial class MainWindow : Window
+public partial class ImageFunnView : UserControl
 {
-    /// <summary>De naam in appsettings.json van de app die de Home-knop start.</summary>
-    private const string JabasoftAppName = "Jabasoft";
-
-    private readonly List<AppEntry> _apps = LoadApps();
+    /// <summary>
+    /// Gaat af als er op Home geklikt is. Deze view weet niet waar Home
+    /// naartoe leidt - dat bepaalt Jabasoft, die deze view in zijn venster
+    /// heeft gezet.
+    /// </summary>
+    public event EventHandler? HomeRequested;
 
     /// <summary>Het startscherm van deze app. Eén keer gemaakt en hergebruikt, zodat wat je erin invult niet weg is als je even naar iets anders kijkt.</summary>
     private readonly InhoudSchermen.Startscherm _startscherm = new();
@@ -51,9 +54,7 @@ public partial class MainWindow : Window
     /// <summary>Het menu zelf, om te kunnen zeggen welke pagina open staat.</summary>
     private Navigatiemenu? _menu;
 
-    private BrokerLogReader? _brokerLog;
-
-    public MainWindow()
+    public ImageFunnView()
     {
         InitializeComponent();
 
@@ -82,36 +83,11 @@ public partial class MainWindow : Window
             ShowContent(NavigatiemenuItem.BeeldNaarTekst);
         };
 
-        // Hoort bij de WindowChrome in MainWindow.xaml: zonder titelbalk
-        // maximaliseert Windows dit venster over de taakbalk heen.
-        Layout.MaximizeBounds.Apply(this);
-
-        // Lettertype en venstermaat kunnen pas als er een venster is; de
-        // rest is in App.OnStartup al gezet.
-        Layout.Preferences.ApplyToWindow(this);
-
-        // Waar het venster stond onthouden we bij het sluiten.
-        Closing += (_, _) => Layout.Preferences.BewaarVenster(this);
-
         BuildMenu();
         WireActionRail();
         ShowContent(NavigatiemenuItem.Home);
-        StartActivityLog();
+        ActivityLog.Shared.Add("app", "ImageFunn geopend");
         StartHealthCheck();
-    }
-
-    /// <summary>
-    /// Leest de Apps-lijst uit appsettings.json naast de exe. Voor deze app
-    /// staat er één entry in: Jabasoft, waar de Home-knop naartoe gaat.
-    /// </summary>
-    private static List<AppEntry> LoadApps()
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-        var json = File.ReadAllText(path);
-        using var document = JsonDocument.Parse(json);
-        var apps = document.RootElement.GetProperty("Apps").Deserialize<List<AppEntry>>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        return apps ?? [];
     }
 
     /// <summary>
@@ -122,27 +98,14 @@ public partial class MainWindow : Window
     {
         _menu = new Navigatiemenu();
 
-        // Uit de gebouwde assembly en niet overgetypt in de XAML: dan kan het
-        // getal op het scherm niet afwijken van de code die draait. Ophogen
-        // gebeurt in <Version> in ImageFunn.App.csproj.
-        _menu.Version = $"V {AppVersion.Current}";
+        // Het nummer van DEZE bibliotheek en niet van de exe waar hij in
+        // draait (dat is Jabasoft): elk onderdeel telt zijn eigen
+        // wijzigingen. Ophogen gebeurt in <Version> in ImageFunn.App.csproj.
+        _menu.Version = $"V {AppVersion.Of(typeof(ImageFunnView).Assembly)}";
 
         AutomationProperties.SetName(_menu, "Hoofdmenu");
         _menu.ItemSelected += (_, item) => Navigate(item);
         AppShell.MenuContent = _menu;
-    }
-
-    /// <summary>
-    /// Vult het Activity-blok: de eigen regels van deze app komen
-    /// rechtstreeks in de gedeelde opvang, en BrokerLogReader haalt die van
-    /// de AI-broker erbij.
-    /// </summary>
-    private void StartActivityLog()
-    {
-        ActivityLog.Shared.Add("app", "ImageFunn gestart");
-
-        _brokerLog = new BrokerLogReader(ActivityLog.Shared);
-        _brokerLog.Start();
     }
 
     /// <summary>
@@ -171,19 +134,17 @@ public partial class MainWindow : Window
             _monitor.Changed += (_, status) => ActivityLog.Shared.Add("app", status.Message);
         }
 
-        // Niet awaiten: het venster mag meteen verschijnen, de pil vult
+        // Niet awaiten: het scherm mag meteen verschijnen, de pil vult
         // zichzelf bij terwijl de controle loopt.
         _ = _monitor.RunAsync();
     }
 
     private void Navigate(NavigatiemenuItem item)
     {
-        // Home is geen scherm van deze app maar de weg terug naar Jabasoft;
-        // ImageFunn gaat nooit vanzelf naar een andere applicatie - dat
-        // gebeurt alleen als je er zelf op klikt.
+        // Home is geen scherm van deze app maar de weg terug naar Jabasoft.
         if (item == NavigatiemenuItem.Home)
         {
-            GaNaarApp(JabasoftAppName);
+            HomeRequested?.Invoke(this, EventArgs.Empty);
             return;
         }
 
@@ -233,30 +194,5 @@ public partial class MainWindow : Window
         }
 
         rail.RefreshRequested += (_, _) => AppShell.ResetSplitters();
-    }
-
-    /// <summary>
-    /// Geeft het scherm over aan een andere applicatie van de familie: die
-    /// komt op DEZELFDE plek en grootte te staan, en dit venster verdwijnt
-    /// van het scherm. Zo voelt het als één venster dat van inhoud wisselt.
-    /// </summary>
-    private void GaNaarApp(string naam)
-    {
-        if (_apps.FirstOrDefault(app => app.Name == naam) is not { Available: true } doel)
-        {
-            ActivityLog.Shared.Add("app", $"{naam} staat niet (of niet als beschikbaar) in appsettings.json.");
-            return;
-        }
-
-        // De venstermaat nog even bewaren: de andere applicatie neemt hem
-        // over, en zo staat hij ook in onze eigen voorkeuren als we straks
-        // weer tevoorschijn komen.
-        Layout.Preferences.BewaarVenster(this);
-
-        var handvat = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        if (!AppHandover.SwitchTo(doel.ExecutablePath, handvat))
-        {
-            ActivityLog.Shared.Add("app", $"{naam} kon niet geopend worden - het venster is niet gevonden.");
-        }
     }
 }

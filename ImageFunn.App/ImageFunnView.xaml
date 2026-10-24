@@ -1,0 +1,24 @@
+<UserControl x:Class="ImageFunn.App.ImageFunnView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:apps="clr-namespace:ImageFunn.App.Paginas">
+
+    <!-- ImageFunn als onderdeel van Jabasoft: geen eigen venster meer, maar
+         de complete paginaschil (header, menu, inhoud, actierail, footer)
+         die Jabasoft in zijn eigen venster zet zodra je op ImageFunn klikt.
+         De Home-knop in het menu geeft het venster weer terug aan Jabasoft
+         (zie HomeRequested in ImageFunnView.xaml.cs).
+
+         De paginaschil (Paginas/Hoofdscherm.xaml) is een Basis met daarin
+         onze eigen Hoofdbalk en Statusbalk. Alles wat die schil gebruikt
+         staat in DIT project (Controls/, Regios/, Paginas/): ImageFunn deelt
+         geen componenten met Jabasoft of AI Studio, zodat hier aangepast kan
+         worden zonder dat de andere onderdelen meeveranderen.
+
+         Menu, Inhoud en Actie worden in code-behind gevuld (zie
+         ImageFunnView.xaml.cs). Ze kunnen hier niet met x:Name in XAML
+         staan - een x:Name'd element DAT als property-waarde aan
+         Hoofdscherm wordt meegegeven botst met diens eigen naam-scope
+         (MC3093). Vandaar ook geen inhoud tussen deze tags. -->
+    <apps:Hoofdscherm x:Name="AppShell" />
+</UserControl>

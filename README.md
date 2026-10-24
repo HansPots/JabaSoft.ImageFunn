@@ -13,12 +13,15 @@ als AI Studio en Tab Studio. Twee kanten:
 
 ## Starten
 
+`ImageFunn.App` is een bibliotheek, geen eigen programma: ImageFunn draait als onderdeel van Jabasoft,
+in hetzelfde venster (menuknop ImageFunn; de Home-knop brengt je terug). Starten gaat dus via
+`D:\Repos\Jabasoft.TheApp\Start-Jabasoft.cmd`. Los bouwen kan nog wel:
+
 ```powershell
 dotnet build JabaSoft.ImageFunn.slnx
-dotnet run --project ImageFunn.App
 ```
 
-`ImageFunn.App` start de beeldservice zelf (poort 5330) zodra de venv bestaat.
+Bij het openen van ImageFunn wordt de beeldservice gestart (poort 5330) zodra de venv bestaat.
 
 ## Python-omgeving (eenmalig)
 

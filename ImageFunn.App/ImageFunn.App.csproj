@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <!-- Een bibliotheek en geen eigen exe meer: ImageFunn is een onderdeel van
+         Jabasoft en draait in diens venster (zie Jabasoft.App/MainWindow).
+         Er is dus ook geen App.xaml meer - de resources (thema, schuifbalk,
+         ververstijd) komen uit die van Jabasoft. -->
+    <OutputType>Library</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,7 +14,7 @@
     <!-- Het versienummer van deze applicatie, los van dat van de rest van de
          familie: elke app telt zijn eigen wijzigingen. Elke wijziging:
          laatste cijfer +1. -->
-    <Version>0.1.0.40</Version>
+    <Version>0.1.0.41</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,9 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- De projectmap, vastgelegd bij het bouwen. Wie vanuit hier een map
+         naast het project zoekt (een Python-service), kan niet meer uitgaan
+         van de map van de exe: dat is die van Jabasoft, in een andere repo. -->
+    <AssemblyMetadata Include="ProjectMap" Value="$(MSBuildProjectDirectory)" />
   </ItemGroup>
 
 </Project>

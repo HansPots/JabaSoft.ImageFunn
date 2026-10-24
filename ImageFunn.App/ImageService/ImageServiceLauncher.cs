@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using Jabasoft.Base;
 using Jabasoft.Base.Logging;
@@ -22,9 +23,20 @@ public static class ImageServiceLauncher
 {
     private static readonly TimeSpan StartupTimeout = TimeSpan.FromSeconds(60);
 
-    /// <summary>De map met .venv en service.py - naast het ImageFunn.App-project, niet erin.</summary>
+    /// <summary>
+    /// De map met .venv en service.py - naast het ImageFunn.App-project, niet
+    /// erin. Vanuit de projectmap die bij het bouwen is vastgelegd (zie
+    /// ImageFunn.App.csproj) en niet vanuit de map van de exe: ImageFunn
+    /// draait in Jabasoft, en die exe staat in een heel andere repo.
+    /// </summary>
     private static readonly string ProjectPath = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "ImageFunn.Image"));
+        Path.Combine(ProjectMap(), "..", "ImageFunn.Image"));
+
+    private static string ProjectMap() =>
+        typeof(ImageServiceLauncher).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "ProjectMap")?.Value
+        ?? AppContext.BaseDirectory;
 
     private static Process? _gestartProces;
 
