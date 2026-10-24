@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 NEGATIEF_STANDAARD = "worst quality, inconsistent motion, blurry, jittery, distorted, static, still image"
@@ -95,15 +96,49 @@ def _bf16():
 
 WAN_ID = "Wan-AI/Wan2.2-TI2V-5B-Diffusers"
 
+# De transformer van Wan staat op Hugging Face in float32 (19 GB). Hij rekent toch in bfloat16, dus die omzetting
+# doen we één keer en bewaren het resultaat hier (±9,5 GB): bij elk volgende laden scheelt dat de helft van het
+# werkgeheugen voor dit deel. Met 32 GB werkgeheugen en een klein wisselbestand liep het laden van Wan anders vol en
+# crashte de service halverwege. De map hoort bij de commit van het model waaruit hij gemaakt is: komt er een nieuwe
+# versie van Wan binnen, dan wordt hij opnieuw gemaakt.
+WAN_TRANSFORMER_CACHE = Path(__file__).parent / "modellen" / "wan22_ti2v_5b_transformer_bf16"
+
+
+def _wan_transformer(meld):
+    """De transformer in bfloat16: uit de bewaarde omzetting, of eerst omzetten (eenmalig, een paar minuten)."""
+    import gc
+
+    import torch
+    from diffusers import WanTransformer3DModel
+    from huggingface_hub import snapshot_download
+
+    commit = Path(snapshot_download(WAN_ID, allow_patterns=["transformer/config.json"])).name
+    merk = WAN_TRANSFORMER_CACHE / "commit.txt"
+
+    if not (merk.is_file() and merk.read_text(encoding="utf-8").strip() == commit):
+        meld("Videomodel Wan 2.2 voor het eerst omzetten naar 16-bits (eenmalig, een paar minuten)…")
+        # Alleen de transformer, nog vóór de rest van de pijplijn geladen is: zo is er genoeg werkgeheugen voor.
+        # Per deel ingelezen en meteen omgezet, dus de piek is de bfloat16-versie plus één deel van 4,7 GB.
+        transformer = WanTransformer3DModel.from_pretrained(WAN_ID, subfolder="transformer", torch_dtype=torch.bfloat16)
+        WAN_TRANSFORMER_CACHE.mkdir(parents=True, exist_ok=True)
+        transformer.save_pretrained(str(WAN_TRANSFORMER_CACHE), safe_serialization=True)
+        merk.write_text(commit, encoding="utf-8")
+        del transformer
+        gc.collect()
+
+    return WanTransformer3DModel.from_pretrained(str(WAN_TRANSFORMER_CACHE), torch_dtype=torch.bfloat16)
+
 
 def _laad_wan(meld):
     import torch
     from diffusers import AutoencoderKLWan, WanPipeline
 
+    transformer = _wan_transformer(meld)
+
     meld("Videomodel laden (Wan 2.2)… (de eerste keer duurt dit langer)")
     # De VAE rekent in float32 (zo is het model getraind); de rest in bfloat16.
     vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32)
-    pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, torch_dtype=torch.bfloat16)
+    pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, transformer=transformer, torch_dtype=torch.bfloat16)
     pipe.enable_model_cpu_offload()
     pipe.vae.enable_tiling()
     pipe.set_progress_bar_config(disable=True)
