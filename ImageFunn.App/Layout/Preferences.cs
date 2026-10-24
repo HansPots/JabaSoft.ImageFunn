@@ -37,6 +37,8 @@ public static class Preferences
     private const string VensterBreedteSleutel = "venster.breedte";
     private const string VensterHoogteSleutel = "venster.hoogte";
     private const string VensterMaxSleutel = "venster.gemaximaliseerd";
+    private const string BeeldmodelSleutel = "beeldservice.model";
+    private const string OntladenNaSleutel = "beeldservice.ontladen-na";
 
     /// <summary>Waar een verse installatie mee begint.</summary>
     public const string StandaardLettertype = "Segoe UI";
@@ -44,6 +46,25 @@ public static class Preferences
     public const double StandaardTekstgrootte = 16;
 
     public const double StandaardVerverstijd = 5;
+
+    /// <summary>
+    /// Het standaard beeldmodel van de beeldservice ("realvis", "juggernaut",
+    /// "sdxl" of "flux") - gaat als IMAGEFUNN_MODEL mee bij het starten (zie
+    /// ImageServiceLauncher). Leeg = nooit gekozen: dan beslist de service zelf
+    /// (of een omgevingsvariabele die al op de pc staat).
+    /// </summary>
+    public static string Beeldmodel => Store.GetString(BeeldmodelSleutel, string.Empty);
+
+    public static void BewaarBeeldmodel(string model) => Store.Set(BeeldmodelSleutel, model);
+
+    /// <summary>
+    /// Na hoeveel seconden zonder opdracht de beeldservice zijn modellen
+    /// loslaat en stopt (0 = nooit) - gaat als IMAGEFUNN_ONTLAAD_NA mee. Kleiner
+    /// dan 0 = nooit gekozen, zelfde afspraak als bij <see cref="Beeldmodel"/>.
+    /// </summary>
+    public static double OntladenNaSeconden => Store.GetDouble(OntladenNaSleutel, -1);
+
+    public static void BewaarOntladenNaSeconden(double seconden) => Store.Set(OntladenNaSleutel, seconden);
 
     public static Theme Thema =>
         Enum.TryParse<Theme>(Store.GetString(ThemaSleutel, nameof(Theme.Lcars)), out var thema)

@@ -82,6 +82,19 @@ public static class ImageServiceLauncher
         startInfo.ArgumentList.Add("--port");
         startInfo.ArgumentList.Add(poortTekst);
 
+        // De keuzes van het instellingenscherm (ImageFunn-kaart in Jabasoft).
+        // Alleen als er echt iets gekozen is: anders blijft een
+        // omgevingsvariabele die al op de pc staat gewoon gelden.
+        if (!string.IsNullOrWhiteSpace(Layout.Preferences.Beeldmodel))
+        {
+            startInfo.Environment["IMAGEFUNN_MODEL"] = Layout.Preferences.Beeldmodel;
+        }
+
+        if (Layout.Preferences.OntladenNaSeconden >= 0)
+        {
+            startInfo.Environment["IMAGEFUNN_ONTLAAD_NA"] = ((int)Layout.Preferences.OntladenNaSeconden).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         try
         {
             _gestartProces = Process.Start(startInfo);
