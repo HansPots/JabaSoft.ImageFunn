@@ -29,12 +29,6 @@ public partial class Statusbalk : UserControl
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-
-        // Statisch, net als TokenTicker - het scherm dat de vraag stelt
-        // kent deze pil niet. Los van OnLoaded/OnUnloaded (die om de poller
-        // gaan) omdat dit geen eigen op- of afbouw nodig heeft.
-        PromptProgressTicker.Changed += OnPromptProgressChanged;
-        Unloaded += (_, _) => PromptProgressTicker.Changed -= OnPromptProgressChanged;
     }
 
     /// <summary>
@@ -108,23 +102,6 @@ public partial class Statusbalk : UserControl
     public void ResetLayout() => SplitterLayout.Reset(PillRow, LayoutKey);
 
     private void OnHealthChanged(object? sender, HealthStatus status) => HealthPill.Show(status);
-
-    /// <summary>
-    /// Komt van de draad waar het antwoord binnenkomt (zie
-    /// PromptProgressTicker), dus via de Dispatcher naar het scherm.
-    /// </summary>
-    private void OnPromptProgressChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
-    {
-        if (PromptProgressTicker.Active)
-        {
-            ProcessingPill.Show(
-                string.Format(CultureInfo.InvariantCulture, "{0:0}%", PromptProgressTicker.Progress * 100),
-                PromptProgressTicker.Progress);
-            return;
-        }
-
-        ProcessingPill.ToonInactief();
-    });
 
     private void OnStatsUpdated(object? sender, SystemStatsSnapshot snapshot)
     {

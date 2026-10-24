@@ -14,7 +14,7 @@
     <!-- Het versienummer van deze applicatie, los van dat van de rest van de
          familie: elke app telt zijn eigen wijzigingen. Elke wijziging:
          laatste cijfer +1. -->
-    <Version>0.1.0.42</Version>
+    <Version>0.1.0.43</Version>
   </PropertyGroup>
 
   <ItemGroup>

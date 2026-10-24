@@ -100,6 +100,16 @@ public sealed class Beeldlezer(IAiBrokerClient broker)
             new("user", vraag, [base64]),
         };
 
+        // Het beeldmodel moet in het videogeheugen passen, en de beeldservice van
+        // ImageFunn houdt daar na een opdracht nog minutenlang zijn eigen modellen
+        // vast. Eerst vrijmaken dus. Loopt er nog een beeld- of video-opdracht,
+        // dan proberen we het toch: misschien staat het beeldmodel al geladen.
+        var vrij = await new ImageService.ImageServiceClient().MaakVideogeheugenVrijAsync(cancellationToken).ConfigureAwait(false);
+        if (!vrij)
+        {
+            ActivityLog.Shared.Add("app", "Afbeelding: er loopt nog een beeld- of video-opdracht - die houdt het videogeheugen vast.");
+        }
+
         ActivityLog.Shared.Add("app", $"Afbeelding: {model} bekijkt de afbeelding ({doel})…");
 
         using var limiet = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -117,8 +127,12 @@ public sealed class Beeldlezer(IAiBrokerClient broker)
                 Onderdeel: $"Beeld naar tekst ({doel})"),
             limiet.Token).ConfigureAwait(false);
 
-        return resultaat.Success
-            ? (resultaat.Reply, null, model)
-            : (null, resultaat.ErrorMessage ?? "Het model gaf geen antwoord.", model);
+        if (resultaat.Success)
+        {
+            return (resultaat.Reply, null, model);
+        }
+
+        var fout = resultaat.ErrorMessage ?? "Het model gaf geen antwoord.";
+        return (null, vrij ? fout : $"{fout} Er liep nog een beeld- of video-opdracht in ImageFunn; probeer het opnieuw als die klaar is.", model);
     }
 }

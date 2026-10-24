@@ -92,6 +92,26 @@ public sealed class ImageServiceClient
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Vraagt de service zijn modellen los te laten, zodat er videogeheugen vrij
+    /// is voor iets anders - het beeldmodel van LM Studio bij Beeld naar tekst.
+    /// De service stopt daarbij zichzelf en start bij de volgende opdracht weer.
+    /// Geeft false als dat nu niet kan omdat er een opdracht loopt; draait de
+    /// service niet, dan is er niets vrij te maken en is het antwoord true.
+    /// </summary>
+    public async Task<bool> MaakVideogeheugenVrijAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _client.PostAsync("/ontladen", null, cancellationToken).ConfigureAwait(false);
+            return response.StatusCode != System.Net.HttpStatusCode.Conflict;
+        }
+        catch (Exception fout) when (fout is HttpRequestException or TaskCanceledException)
+        {
+            return true;
+        }
+    }
+
     /// <summary>Is de service bereikbaar, en heeft hij een GPU?</summary>
     public async Task<BeeldServiceGezondheid?> GetHealthAsync(CancellationToken cancellationToken = default)
     {
