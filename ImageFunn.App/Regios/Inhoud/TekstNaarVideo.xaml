@@ -95,7 +95,7 @@
                 </Grid>
                 </StackPanel>
 
-                <CheckBox Grid.Row="3" x:Name="VerbeterBox" IsChecked="True" Margin="0,14,0,0"
+                <CheckBox Grid.Row="3" x:Name="VerbeterBox" IsChecked="False" Margin="0,14,0,0"
                           Content="Scène automatisch vertalen en verbeteren"
                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}"
                           ToolTip="Het videomodel begrijpt alleen Engels. Hiermee schrijft het chatmodel je omschrijving eerst om." />

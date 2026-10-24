@@ -40,6 +40,12 @@ public partial class BeeldNaarVideo : UserControl
     public BeeldNaarVideo(IAiBrokerClient broker)
     {
         InitializeComponent();
+
+        // "Automatisch vertalen en verbeteren": standaard uit, en de keuze wordt
+        // onthouden voor de volgende keer (zie Layout.Preferences.Verbeteren).
+        VerbeterBox.IsChecked = Layout.Preferences.Verbeteren("beeldnaarvideo");
+        VerbeterBox.Checked += (_, _) => Layout.Preferences.BewaarVerbeteren("beeldnaarvideo", true);
+        VerbeterBox.Unchecked += (_, _) => Layout.Preferences.BewaarVerbeteren("beeldnaarvideo", false);
         _verbeteraar = new Promptverbeteraar(broker);
         Loaded += async (_, _) => await VulGalerijAsync();
     }

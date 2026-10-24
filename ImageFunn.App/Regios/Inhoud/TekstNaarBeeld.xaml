@@ -102,8 +102,8 @@
                 </Grid>
                 </StackPanel>
 
-                <CheckBox Grid.Row="4" x:Name="VerbeterBox" IsChecked="True" Margin="0,14,0,0"
-                          Content="Prompt automatisch vertalen en verbeteren (aanbevolen)"
+                <CheckBox Grid.Row="4" x:Name="VerbeterBox" IsChecked="False" Margin="0,14,0,0"
+                          Content="Prompt automatisch vertalen en verbeteren"
                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="{DynamicResource FontSizeSmall}"
                           ToolTip="Het beeldmodel begrijpt alleen Engels. Hiermee schrijft het chatmodel je omschrijving eerst om." />
 

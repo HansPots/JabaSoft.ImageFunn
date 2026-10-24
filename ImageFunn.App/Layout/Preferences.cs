@@ -66,6 +66,15 @@ public static class Preferences
 
     public static void BewaarOntladenNaSeconden(double seconden) => Store.Set(OntladenNaSleutel, seconden);
 
+    /// <summary>
+    /// Staat "automatisch vertalen en verbeteren" aan op deze pagina? Per pagina
+    /// onthouden (Tekst naar beeld, Tekst naar video, Beeld naar video), en
+    /// standaard UIT: je typt dan zelf de prompt zoals het model hem krijgt.
+    /// </summary>
+    public static bool Verbeteren(string pagina) => Store.GetBool($"verbeteren.{pagina}", false);
+
+    public static void BewaarVerbeteren(string pagina, bool aan) => Store.Set($"verbeteren.{pagina}", aan);
+
     public static Theme Thema =>
         Enum.TryParse<Theme>(Store.GetString(ThemaSleutel, nameof(Theme.Lcars)), out var thema)
             ? thema

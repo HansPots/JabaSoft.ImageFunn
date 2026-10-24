@@ -48,6 +48,12 @@ public partial class TekstNaarBeeld : UserControl
     public TekstNaarBeeld(IAiBrokerClient broker)
     {
         InitializeComponent();
+
+        // "Automatisch vertalen en verbeteren": standaard uit, en de keuze wordt
+        // onthouden voor de volgende keer (zie Layout.Preferences.Verbeteren).
+        VerbeterBox.IsChecked = Layout.Preferences.Verbeteren("tekstnaarbeeld");
+        VerbeterBox.Checked += (_, _) => Layout.Preferences.BewaarVerbeteren("tekstnaarbeeld", true);
+        VerbeterBox.Unchecked += (_, _) => Layout.Preferences.BewaarVerbeteren("tekstnaarbeeld", false);
         _verbeteraar = new Promptverbeteraar(broker);
         Loaded += async (_, _) => await VulGalerijAsync();
     }
