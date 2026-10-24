@@ -15,7 +15,7 @@ als AI Studio en Tab Studio. Twee kanten:
 
 `ImageFunn.App` is een bibliotheek, geen eigen programma: ImageFunn draait als onderdeel van Jabasoft,
 in hetzelfde venster (menuknop ImageFunn; de Home-knop brengt je terug). Starten gaat dus via
-`D:\Repos\Jabasoft.TheApp\Start-Jabasoft.cmd`. Los bouwen kan nog wel:
+`D:\Repos\Jabasoft\Start-Jabasoft.cmd`. Los bouwen kan nog wel:
 
 ```powershell
 dotnet build JabaSoft.ImageFunn.slnx
