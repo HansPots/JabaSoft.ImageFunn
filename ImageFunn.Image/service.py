@@ -14,8 +14,8 @@ meta.json); de paden komen terug in de JSON, want client en service draaien
 op dezelfde machine. Bij het opstarten worden de meta.json's teruggelezen,
 zodat de galerij een herstart van de service overleeft.
 
-Standaard SDXL (stabilityai/stable-diffusion-xl-base-1.0). Ander model? Zet IMAGEFUNN_MODEL op "flux"
-of zet het op "flux" (FLUX.1-schnell, vraagt een Hugging Face-login).
+Standaard RealVisXL; IMAGEFUNN_MODEL kiest een andere standaard ("juggernaut", "sdxl" of "flux"). Een opdracht kan
+zelf een beeldmodel vragen (Opdracht.beeldmodel), ook FLUX.1-schnell: dan wisselt de service van model.
 
 Starten (handmatig - ImageFunn.App doet dit zelf bij het opstarten):
     .venv\\Scripts\\python.exe -m uvicorn service:app --port 5330
@@ -53,11 +53,15 @@ UITVOER.mkdir(exist_ok=True)
 # "sdxl": het gewone SDXL-basismodel. "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
 MODEL_KEUZE = os.environ.get("IMAGEFUNN_MODEL", "realvis").lower()
 
-# Juggernaut is een SDXL-model: dezelfde pijplijn, IP-Adapters en afmetingen, alleen met een ander beeldnetwerk (UNet).
-SDXL_FAMILIE = MODEL_KEUZE in ("sdxl", "juggernaut", "realvis")
+# Juggernaut en RealVisXL zijn SDXL-modellen: dezelfde pijplijn, IP-Adapters en afmetingen, alleen met een ander
+# beeldnetwerk (UNet). FLUX is een eigen pijplijn: snel (4 stappen), maar zonder IP-Adapter en zonder bijsturen.
+# Welk model er draait kan per opdracht wisselen (Opdracht.beeldmodel); MODEL_KEUZE is alleen de standaard.
+SDXL_MODELLEN = ("sdxl", "juggernaut", "realvis")
 
-# Guidance: Juggernaut werkt het best rond 5; het SDXL-basismodel rond 6,5.
-GUIDANCE = 5.0 if MODEL_KEUZE in ("juggernaut", "realvis") else 6.5
+
+def _guidance(model: str) -> float:
+    """Guidance: Juggernaut en RealVisXL werken het best rond 5; het SDXL-basismodel rond 6,5."""
+    return 5.0 if model in ("juggernaut", "realvis") else 6.5
 
 # Na zoveel seconden zonder opdracht laat de service zijn modellen los en STOPT hij zichzelf. Alleen het videokaartgeheugen
 # laat zich in het proces vrijgeven; het werkgeheugen (RAM, 7 tot 13 GB) houden PyTorch en de CUDA-stuurprogramma's vast
@@ -118,8 +122,9 @@ class Opdracht(BaseModel):
     frames: int = Field(97, ge=9, le=161)
     # Welk videomodel (sleutel uit videomodellen.MODELLEN). Geldt voor soort "video" en "film".
     videomodel: str = videomodellen.STANDAARD
-    # Welk beeldmodel (alleen bij de SDXL-familie): "juggernaut" of "realvis"; leeg = de standaard van de service.
-    beeldmodel: Literal["", "juggernaut", "realvis"] = ""
+    # Welk beeldmodel: "juggernaut", "realvis" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen met
+    # een SDXL-model en valt bij FLUX terug op RealVisXL; de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
+    beeldmodel: Literal["", "juggernaut", "realvis", "flux"] = ""
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
     modus: Literal["doorlopend", "sleutelbeelden"] = "sleutelbeelden"
@@ -292,7 +297,7 @@ def _laad_pijplijn(meld):
     """Laadt het model één keer; daarna blijft het in het geheugen."""
     global _pipe, _pipe_model, _ip_beschikbaar
     with _pipe_slot:
-        gevraagd = (_vraag_model or MODEL_KEUZE) if SDXL_FAMILIE else MODEL_KEUZE
+        gevraagd = _vraag_model or MODEL_KEUZE
         if _pipe is not None:
             if _pipe_model == gevraagd:
                 return _pipe
@@ -305,7 +310,7 @@ def _laad_pijplijn(meld):
         if not torch.cuda.is_available():
             raise RuntimeError("Geen CUDA-GPU gevonden - installeer PyTorch met CUDA (zie requirements.txt).")
 
-        if SDXL_FAMILIE:
+        if gevraagd in SDXL_MODELLEN:
             from diffusers import StableDiffusionXLPipeline
 
             sdxl = "stabilityai/stable-diffusion-xl-base-1.0"
@@ -396,7 +401,7 @@ def _draai_beeld(taak: Taak) -> None:
 
             pipe = _laad_pijplijn(meld)
             o = taak.opdracht
-            flux = not SDXL_FAMILIE
+            flux = _pipe_model not in SDXL_MODELLEN
             stappen = o.stappen or (4 if flux else 30)
             # FLUX rekent in blokken van 16 pixels, SDXL van 8.
             blok = 16 if flux else 8
@@ -420,7 +425,7 @@ def _draai_beeld(taak: Taak) -> None:
             if flux:
                 args.update(guidance_scale=0.0, max_sequence_length=256)
             else:
-                args.update(guidance_scale=GUIDANCE, negative_prompt=o.negatief or None)
+                args.update(guidance_scale=_guidance(_pipe_model), negative_prompt=o.negatief or None)
                 args.update(_ip_args(pipe))
 
             taak.stap = "Genereren…"
@@ -511,6 +516,7 @@ def _draai_bewerk(taak: Taak) -> None:
     als "sterkte" toelaat (laag = de indeling blijft, hoog = meer vrijheid). Met een masker is het inpainting: alleen het
     witte gebied wordt opnieuw gemaakt, de rest blijft zoals het was.
     """
+    global _vraag_model
     with _wachtrij_slot:
         taak.status = "bezig"
         try:
@@ -519,8 +525,9 @@ def _draai_bewerk(taak: Taak) -> None:
             from PIL import Image
 
             o = taak.opdracht
-            if not SDXL_FAMILIE:
-                raise RuntimeError("Bijsturen werkt alleen met Juggernaut of SDXL.")
+            # Bijsturen bestaat alleen voor SDXL-modellen; is FLUX gevraagd (of de standaard), dan RealVisXL.
+            if (_vraag_model or MODEL_KEUZE) not in SDXL_MODELLEN:
+                _vraag_model = "realvis"
             if not _bestaat_pad(o.bron_beeld):
                 raise RuntimeError("Het beeld om bij te sturen is niet gevonden.")
 
@@ -560,7 +567,7 @@ def _draai_bewerk(taak: Taak) -> None:
                 image=bron,
                 strength=o.sterkte,
                 num_inference_steps=stappen,
-                guidance_scale=GUIDANCE,
+                guidance_scale=_guidance(_pipe_model),
                 generator=torch.Generator("cpu").manual_seed(seed),
                 callback_on_step_end=stap_klaar,
             )
@@ -740,7 +747,7 @@ def _ip_args(
     De extra invoer voor de twee IP-Adapters: adapter 1 het beeld van de speler, adapter 2 het beeld van de plek.
     Ontbreekt er een, dan krijgt die een grijs beeld met sterkte 0.
     """
-    if SDXL_FAMILIE and _ip_beschikbaar:
+    if _pipe_model in SDXL_MODELLEN and _ip_beschikbaar:
         from PIL import Image
 
         leeg = Image.new("RGB", (224, 224), (127, 127, 127))
@@ -784,7 +791,7 @@ def _render_sleutelbeeld(
     import torch
 
     pipe = _laad_pijplijn(meld)
-    flux = not SDXL_FAMILIE
+    flux = _pipe_model not in SDXL_MODELLEN
     blok = 16 if flux else 8
     k = (1024 * 1024 / (breedte * hoogte)) ** 0.5
     b, h = max(blok, round(breedte * k / blok) * blok), max(blok, round(hoogte * k / blok) * blok)
@@ -804,7 +811,7 @@ def _render_sleutelbeeld(
     if flux:
         args.update(guidance_scale=0.0, max_sequence_length=256)
     else:
-        args.update(guidance_scale=GUIDANCE, negative_prompt=negatief or "blurry, low quality, deformed, text, watermark")
+        args.update(guidance_scale=_guidance(_pipe_model), negative_prompt=negatief or "blurry, low quality, deformed, text, watermark")
         args.update(_ip_args(pipe, speler, plek, speler_sterkte, plek_sterkte, voorwerp, voorwerp_sterkte))
     return pipe(**args).images[0]
 

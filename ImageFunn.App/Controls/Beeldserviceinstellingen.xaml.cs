@@ -16,7 +16,7 @@ public partial class Beeldserviceinstellingen : UserControl
         ("realvis", "RealVisXL V5.0 - fotorealistisch (standaard)"),
         ("juggernaut", "JuggernautXL Ragnarok - fotorealistisch"),
         ("sdxl", "SDXL-basismodel"),
-        ("flux", "FLUX.1-schnell (vraagt een Hugging Face-login)"),
+        ("flux", "FLUX.1-schnell - snel, 4 stappen (geen bijsturen of cast-gelijkenis)"),
     ];
 
     /// <summary>De keuzes voor het loslaten, in seconden zoals service.py ze wil (IMAGEFUNN_ONTLAAD_NA). 0 = nooit.</summary>

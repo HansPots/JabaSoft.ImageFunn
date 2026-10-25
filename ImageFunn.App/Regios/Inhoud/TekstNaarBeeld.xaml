@@ -74,9 +74,10 @@
                            FontSize="{DynamicResource FontSizeSmall}" Margin="0,14,0,6" />
                 <StackPanel Grid.Row="3">
                     <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,0,0,8"
-                              ToolTip="Welk model het beeld maakt. Beide zijn realistisch maar hebben een eigen look: probeer dezelfde tekst met allebei.">
+                              ToolTip="Welk model het beeld maakt. RealVisXL en Juggernaut zijn realistisch met een eigen look; FLUX.1-schnell is snel (4 stappen) en volgt lange teksten beter. Wisselen van model kost de eerste keer even laadtijd.">
                         <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
                         <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
+                        <ComboBoxItem Content="Beeldmodel: FLUX.1-schnell (snel)" Tag="flux" />
                     </ComboBox>
                     <Grid>
                     <Grid.ColumnDefinitions>

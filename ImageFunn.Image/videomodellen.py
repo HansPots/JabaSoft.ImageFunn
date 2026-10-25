@@ -140,6 +140,7 @@ def _laad_wan(meld):
     vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32)
     pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, transformer=transformer, torch_dtype=torch.bfloat16)
     pipe.enable_model_cpu_offload()
+    _tekst_op_processor(pipe, _WAN_TEKST)
     pipe.vae.enable_tiling()
     pipe.set_progress_bar_config(disable=True)
     return pipe
@@ -151,6 +152,8 @@ def _wan_i2v(pipe):
 
     i2v = WanImageToVideoPipeline.from_pipe(pipe, dtype=_bf16())
     i2v.vae.to(torch.float32)  # from_pipe zette ook de VAE op bfloat16; Wan wil die in float32
+    # De tekstencoder staat op None (zie _WAN_TEKST); ook deze pijplijn zet de tekst om op de processor.
+    _tekst_op_processor(i2v, _WAN_TEKST)
     return i2v
 
 
@@ -191,6 +194,91 @@ KANDINSKY_T2V = "kandinskylab/Kandinsky-5.0-T2V-Lite-distilled16steps-5s-Diffuse
 KANDINSKY_I2V = "kandinskylab/Kandinsky-5.0-I2V-Lite-5s-Diffusers"
 
 
+class _Tekstencoders:
+    """
+    De tekstencoder(s) van een videomodel: alleen in het geheugen terwijl de tekst wordt omgezet.
+
+    Ze zijn groot (Kandinsky ±22 GB, Wan ±11 GB) en alleen nodig om de tekst om te zetten - daarna niet meer. Bleven
+    ze staan, dan liep bij het decoderen van de video aan het eind het geheugen vol en crashte de service (gemeten bij
+    Kandinsky: alle stappen klaar, wisselbestand vol, crash in c10.dll; bij Wan op 768x512 hetzelfde). Daarom worden
+    ze vlak voor het omzetten geladen (of hergebruikt) en meteen daarna losgelaten. Kost bij een volgende opdracht
+    ±20-30 s laden. Eén exemplaar per model, gedeeld door tekst-naar-video en beeld-naar-video.
+    """
+
+    def __init__(self, repo: str, namen: tuple[str, ...]):
+        self.repo = repo
+        self.namen = namen
+        self.klassen: tuple | None = None
+        self.geladen: tuple | None = None
+
+    def laad(self):
+        import torch
+
+        if self.geladen is None:
+            self.geladen = tuple(
+                klasse.from_pretrained(self.repo, subfolder=naam, torch_dtype=torch.bfloat16)
+                for klasse, naam in zip(self.klassen, self.namen)
+            )
+        return self.geladen
+
+    def los(self):
+        import gc
+
+        self.geladen = None
+        gc.collect()
+
+
+def _tekst_op_processor(pipe, tekst: _Tekstencoders):
+    """
+    Laat de pijplijn de tekst omzetten op de processor in plaats van op de videokaart, en de tekstencoders daarna los.
+
+    De tekstencoder van Kandinsky (Qwen2.5-VL, 7B) is in bfloat16 15,4 GB en past niet op een videokaart van 12 GB.
+    Met enable_model_cpu_offload werd hij voor het omzetten toch in zijn geheel naar de videokaart geschoven; het
+    stuurprogramma leende de rest uit het werkgeheugen, dat liep vol en de service crashte (gemeten: videokaart 11,5 GB
+    vol, gedeeld geheugen oplopend, toezegruimte op 0). Wan (±11 GB) paste nog net, maar krap. Hier staan de
+    tekstencoders op de processor en buiten de offload-keten: het omzetten duurt langer, maar alleen het resultaat
+    (een paar MB) gaat naar de videokaart. De kwaliteit is gelijk. Na het omzetten gaan ze uit het geheugen.
+    """
+    import torch
+    from accelerate.hooks import remove_hook_from_module
+
+    aanwezig = [getattr(pipe, naam, None) for naam in tekst.namen]
+    tekstencoders = [m for m in aanwezig if m is not None]
+    if tekst.klassen is None and len(tekstencoders) == len(tekst.namen):
+        tekst.klassen = tuple(type(m) for m in tekstencoders)
+        tekst.geladen = tuple(tekstencoders)
+
+    for model in tekstencoders:
+        # De offload-hook zou hem bij elke aanroep naar de videokaart verhuizen - die gaat eraf.
+        remove_hook_from_module(model, recurse=True)
+        model.to("cpu")
+
+    # Ook de hooks van de rest mogen niet naar de tekstencoders blijven wijzen, anders komt hun geheugen nooit vrij.
+    pipe._all_hooks = [h for h in getattr(pipe, "_all_hooks", []) if not any(h.model is m for m in tekstencoders)]
+    for h in pipe._all_hooks:
+        vorige = getattr(h.hook, "prev_module_hook", None)
+        if vorige is not None and any(vorige.model is m for m in tekstencoders):
+            h.hook.prev_module_hook = None
+    for naam in tekst.namen:
+        setattr(pipe, naam, None)
+
+    origineel = pipe.encode_prompt
+
+    def encode_prompt(*args, device=None, **kwargs):
+        doel = device or pipe._execution_device
+        for naam, model in zip(tekst.namen, tekst.laad()):
+            setattr(pipe, naam, model)
+        try:
+            uitkomst = origineel(*args, device=torch.device("cpu"), **kwargs)
+        finally:
+            for naam in tekst.namen:
+                setattr(pipe, naam, None)
+            tekst.los()
+        return tuple(deel.to(doel) if isinstance(deel, torch.Tensor) else deel for deel in uitkomst)
+
+    pipe.encode_prompt = encode_prompt
+
+
 def _laad_kandinsky(meld):
     import torch
     from diffusers import Kandinsky5T2VPipeline
@@ -198,6 +286,7 @@ def _laad_kandinsky(meld):
     meld("Videomodel laden (Kandinsky 5)… (de eerste keer duurt dit langer)")
     pipe = Kandinsky5T2VPipeline.from_pretrained(KANDINSKY_T2V, torch_dtype=torch.bfloat16)
     pipe.enable_model_cpu_offload()
+    _tekst_op_processor(pipe, _KANDINSKY_TEKST)
     if hasattr(pipe.vae, "enable_tiling"):
         pipe.vae.enable_tiling()
     pipe.set_progress_bar_config(disable=True)
@@ -208,11 +297,17 @@ def _kandinsky_i2v(pipe):
     import torch
     from diffusers import Kandinsky5I2VPipeline
 
+    # De tekstencoders staan hier op None: _KANDINSKY_TEKST laadt ze pas bij het omzetten van de tekst (gedeeld).
     delen = {k: getattr(pipe, k) for k in ("vae", "text_encoder", "tokenizer", "text_encoder_2", "tokenizer_2", "scheduler")}
     i2v = Kandinsky5I2VPipeline.from_pretrained(KANDINSKY_I2V, torch_dtype=torch.bfloat16, **delen)
     i2v.enable_model_cpu_offload()
+    _tekst_op_processor(i2v, _KANDINSKY_TEKST)
     return i2v
 
+
+# De tekstencoders van Wan (umT5-XXL, ±11 GB) en Kandinsky (±22 GB): alleen in het geheugen tijdens het omzetten.
+_WAN_TEKST = _Tekstencoders(WAN_ID, ("text_encoder",))
+_KANDINSKY_TEKST = _Tekstencoders(KANDINSKY_T2V, ("text_encoder", "text_encoder_2"))
 
 MODELLEN: dict[str, Videomodel] = {
     "wan": Videomodel(
