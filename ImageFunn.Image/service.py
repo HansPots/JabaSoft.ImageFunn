@@ -14,7 +14,7 @@ meta.json); de paden komen terug in de JSON, want client en service draaien
 op dezelfde machine. Bij het opstarten worden de meta.json's teruggelezen,
 zodat de galerij een herstart van de service overleeft.
 
-Standaard RealVisXL; IMAGEFUNN_MODEL kiest een andere standaard ("juggernaut", "sdxl" of "flux"). Een opdracht kan
+Standaard RealVisXL; IMAGEFUNN_MODEL kiest een andere standaard ("juggernaut" of "flux"). Een opdracht kan
 zelf een beeldmodel vragen (Opdracht.beeldmodel), ook FLUX.1-schnell: dan wisselt de service van model.
 
 Starten (handmatig - ImageFunn.App doet dit zelf bij het opstarten):
@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 import videomodellen
 
@@ -53,18 +53,27 @@ UITVOER = Path(__file__).parent / "uitvoer"
 UITVOER.mkdir(exist_ok=True)
 
 # "realvis" (standaard): RealVisXL V5.0, een fotorealistische SDXL-variant. "juggernaut": JuggernautXL Ragnarok, ook fotorealistisch.
-# "sdxl": het gewone SDXL-basismodel. "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
-MODEL_KEUZE = os.environ.get("IMAGEFUNN_MODEL", "realvis").lower()
+# "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
+BEELDMODELLEN = ("realvis", "juggernaut", "flux")
+
+
+def _beeldmodel(naam: str) -> str:
+    """Een bekend beeldmodel; iets anders (zoals het vervallen "sdxl" uit oude instellingen) wordt RealVisXL."""
+    naam = (naam or "").lower()
+    return naam if naam in BEELDMODELLEN else "realvis"
+
+
+MODEL_KEUZE = _beeldmodel(os.environ.get("IMAGEFUNN_MODEL", "realvis"))
 
 # Juggernaut en RealVisXL zijn SDXL-modellen: dezelfde pijplijn, IP-Adapters en afmetingen, alleen met een ander
 # beeldnetwerk (UNet). FLUX is een eigen pijplijn: snel (4 stappen), maar zonder IP-Adapter en zonder bijsturen.
 # Welk model er draait kan per opdracht wisselen (Opdracht.beeldmodel); MODEL_KEUZE is alleen de standaard.
-SDXL_MODELLEN = ("sdxl", "juggernaut", "realvis")
+SDXL_MODELLEN = ("juggernaut", "realvis")
 
 
 def _guidance(model: str) -> float:
-    """Guidance: Juggernaut en RealVisXL werken het best rond 5; het SDXL-basismodel rond 6,5."""
-    return 5.0 if model in ("juggernaut", "realvis") else 6.5
+    """Guidance: Juggernaut en RealVisXL werken het best rond 5."""
+    return 5.0
 
 # Na zoveel seconden zonder opdracht laat de service zijn modellen los en STOPT hij zichzelf. Alleen het videokaartgeheugen
 # laat zich in het proces vrijgeven; het werkgeheugen (RAM, 7 tot 13 GB) houden PyTorch en de CUDA-stuurprogramma's vast
@@ -125,9 +134,9 @@ class Opdracht(BaseModel):
     frames: int = Field(97, ge=9, le=161)
     # Welk videomodel (sleutel uit videomodellen.MODELLEN). Geldt voor soort "video" en "film".
     videomodel: str = videomodellen.STANDAARD
-    # Welk beeldmodel: "juggernaut", "realvis", "sdxl" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen
+    # Welk beeldmodel: "juggernaut", "realvis" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen
     # met een SDXL-model en valt bij FLUX terug op RealVisXL; de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
-    beeldmodel: Literal["", "juggernaut", "realvis", "sdxl", "flux"] = ""
+    beeldmodel: str = ""
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
     modus: Literal["doorlopend", "sleutelbeelden"] = "sleutelbeelden"
@@ -145,6 +154,17 @@ class Opdracht(BaseModel):
     # zonder masker verandert het hele beeld, zoveel als sterkte toelaat.
     masker: str | None = None
     sterkte: float = Field(0.5, ge=0.05, le=1.0)
+
+    # Oude verhalen en instellingen kunnen een vervallen model noemen (SDXL-basis, SANA, Kandinsky): dan de standaard.
+    @field_validator("beeldmodel")
+    @classmethod
+    def _bekend_beeldmodel(cls, waarde: str) -> str:
+        return _beeldmodel(waarde) if waarde else ""
+
+    @field_validator("videomodel")
+    @classmethod
+    def _bekend_videomodel(cls, waarde: str) -> str:
+        return waarde if waarde in videomodellen.MODELLEN else videomodellen.STANDAARD
 
 
 class Taak:
@@ -245,7 +265,8 @@ def _laad_juggernaut_unet(meld):
     import torch
     from diffusers import UNet2DConditionModel
 
-    config = UNet2DConditionModel.load_config("stabilityai/stable-diffusion-xl-base-1.0", subfolder="unet")
+    # Juggernaut heeft dezelfde opbouw als elk SDXL-netwerk; de beschrijving daarvan komt uit RealVisXL (al aanwezig).
+    config = UNet2DConditionModel.load_config(REALVIS_ID, subfolder="unet")
 
     def lege_unet():
         # In fp16 opbouwen: het standaardtype fp32 zou eerst 10 GB RAM vragen.
@@ -316,24 +337,22 @@ def _laad_pijplijn(meld):
         if gevraagd in SDXL_MODELLEN:
             from diffusers import StableDiffusionXLPipeline
 
-            sdxl = "stabilityai/stable-diffusion-xl-base-1.0"
+            # Juggernaut is alleen een eigen beeldnetwerk (UNet); tekstencoders en VAE komen van RealVisXL.
+            sdxl = REALVIS_ID
             extra: dict[str, Any] = {}
-            if gevraagd == "realvis":
-                sdxl = REALVIS_ID
-                meld("Beeldmodel laden (RealVisXL)…")
-            elif gevraagd == "juggernaut":
+            if gevraagd == "juggernaut":
                 meld("Beeldmodel laden (Juggernaut XL)…")
                 try:
                     unet = _laad_juggernaut_unet(meld)
-                except Exception:  # noqa: BLE001 - lukt het niet, dan werkt het gewone SDXL nog steeds
+                except Exception:  # noqa: BLE001 - lukt het niet, dan werkt RealVisXL nog steeds
                     traceback.print_exc()
                     unet = None
                 if unet is not None:
                     extra["unet"] = unet
                 else:
-                    meld("Juggernaut niet beschikbaar - het gewone SDXL wordt gebruikt…")
+                    meld("Juggernaut niet beschikbaar - RealVisXL wordt gebruikt…")
             else:
-                meld("Beeldmodel laden (SDXL)…")
+                meld("Beeldmodel laden (RealVisXL)…")
             try:
                 # Met IP-Adapter: een voorbeeldbeeld waar nieuwe beelden op lijken (dezelfde robot in elke scène).
                 from transformers import CLIPVisionModelWithProjection
@@ -352,13 +371,12 @@ def _laad_pijplijn(meld):
                 traceback.print_exc()
                 _ip_beschikbaar = False
                 pipe = StableDiffusionXLPipeline.from_pretrained(sdxl, torch_dtype=torch.float16, variant="fp16", **extra)
-            if "unet" in extra or gevraagd == "realvis":
-                # De sampler die bij Juggernaut en RealVisXL hoort (DPM++ 2M SDE met Karras-sigma's).
-                from diffusers import DPMSolverMultistepScheduler
+            # De sampler die bij Juggernaut en RealVisXL hoort (DPM++ 2M SDE met Karras-sigma's).
+            from diffusers import DPMSolverMultistepScheduler
 
-                pipe.scheduler = DPMSolverMultistepScheduler.from_config(
-                    pipe.scheduler.config, use_karras_sigmas=True, algorithm_type="sde-dpmsolver++"
-                )
+            pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                pipe.scheduler.config, use_karras_sigmas=True, algorithm_type="sde-dpmsolver++"
+            )
             pipe.enable_model_cpu_offload()
         else:
             from diffusers import BitsAndBytesConfig as DiffusersBnb
@@ -661,8 +679,6 @@ def _draai_video(taak: Taak) -> None:
     with _wachtrij_slot:
         taak.status = "bezig"
         try:
-            import torch
-            from diffusers.utils import export_to_video
             from PIL import Image
 
             o = taak.opdracht
@@ -732,7 +748,7 @@ def _draai_video(taak: Taak) -> None:
             for oud in map_.glob("voorproef_*.jpg"):
                 oud.unlink(missing_ok=True)
             pad = map_ / "video.mp4"
-            export_to_video(beelden, str(pad), fps=vm.fps)
+            _schrijf_video(beelden, pad, vm.fps)
             taak.bestand = str(pad)
             taak.voortgang = 1.0
             taak.stap = "Klaar"
@@ -747,12 +763,81 @@ def _draai_video(taak: Taak) -> None:
             taak.stap = "Mislukt"
 
 
-def _naar_24fps(beelden: list, fps: int) -> list:
-    """Videomodellen met een ander tempo (bijv. 16 fps) krijgen dubbele beelden, zodat scènes in de film op 24 fps passen."""
-    if fps == 24:
-        return beelden
-    n = round(len(beelden) * 24 / fps)
-    return [beelden[min(len(beelden) - 1, int(i * fps / 24))] for i in range(n)]
+def _naar_uint8(beeld):
+    """Eén videobeeld als numpy-array (hoogte, breedte, 3) in 0..255, of het nu PIL, 0..1-float of al uint8 is."""
+    import numpy as np
+
+    arr = np.asarray(beeld)
+    if arr.dtype != np.uint8:
+        arr = (np.clip(arr.astype(np.float32), 0.0, 1.0) * 255.0).round().astype(np.uint8)
+    return arr[..., :3]
+
+
+# Kwaliteit bij het coderen (x264 CRF: lager = beter). Een scène wordt nog een keer gelezen en opnieuw gecodeerd in de
+# film, dus die bewaren we bijna verliesvrij; de film zelf en losse video's krijgen één keer een ruime kwaliteit.
+CRF_SCENE = 10
+CRF_EIND = 17
+
+
+def _video_schrijver(pad: Path, fps: int, crf: int):
+    import imageio.v2 as iio2
+
+    return iio2.get_writer(
+        str(pad), fps=fps, codec="libx264", quality=None, macro_block_size=None, pixelformat="yuv420p",
+        ffmpeg_params=["-crf", str(crf), "-preset", "slow"],
+    )
+
+
+def _schrijf_video(beelden, pad: Path, fps: int, crf: int = CRF_EIND) -> None:
+    schrijver = _video_schrijver(pad, fps, crf)
+    try:
+        for beeld in beelden:
+            schrijver.append_data(_naar_uint8(beeld))
+    finally:
+        schrijver.close()
+
+
+def _beste_eindbeeld(beelden, kleur_van=None):
+    """
+    Het startbeeld voor de volgende scène bij "doorlopend": het scherpste van de laatste beelden (het allerlaatste is
+    vaak wat wazig door beweging), met de kleuren half teruggetrokken naar die van het startbeeld van deze scène. Zo
+    zakken scherpte en kleur niet scène na scène verder weg.
+    """
+    import numpy as np
+    from PIL import Image
+
+    kandidaten = [_naar_uint8(b) for b in list(beelden)[-6:]]
+
+    def scherpte(arr) -> float:
+        grijs = arr.astype(np.float32).mean(axis=2)
+        lap = 4 * grijs[1:-1, 1:-1] - grijs[:-2, 1:-1] - grijs[2:, 1:-1] - grijs[1:-1, :-2] - grijs[1:-1, 2:]
+        return float(lap.var())
+
+    # Bij gelijke scherpte het laatste: dat sluit het best aan.
+    beste = max(range(len(kandidaten)), key=lambda k: (round(scherpte(kandidaten[k]), 1), k))
+    arr = kandidaten[beste].astype(np.float32)
+
+    if kleur_van is not None:
+        ref = np.asarray(kleur_van.convert("RGB").resize((arr.shape[1], arr.shape[0])), dtype=np.float32)
+        gem, spr = arr.mean(axis=(0, 1)), arr.std(axis=(0, 1)) + 1e-3
+        ref_gem, ref_spr = ref.mean(axis=(0, 1)), ref.std(axis=(0, 1)) + 1e-3
+        gelijk = (arr - gem) / spr * ref_spr + ref_gem
+        arr = 0.5 * arr + 0.5 * gelijk
+
+    return Image.fromarray(np.clip(arr, 0, 255).round().astype(np.uint8))
+
+
+def _startbeeld(sc: "Scene"):
+    """Het beeld waarmee een scène begon (sleutelbeeld of startbeeld), of None."""
+    from PIL import Image
+
+    return Image.open(sc.sleutel).convert("RGB") if _bestaat_pad(sc.sleutel) else None
+
+
+def _animatieprompt(sc: "Scene", stijl: str) -> str:
+    """Wat het videomodel leest: wat er in beeld is, wat er beweegt, en de beeldstijl (houdt personages en stijl vast)."""
+    delen = [d.strip().rstrip(".") for d in (sc.beeld, sc.beweging, stijl) if d and d.strip()]
+    return ". ".join(delen) + "." if delen else "natural motion."
 
 
 class _Gestopt(Exception):
@@ -1011,11 +1096,8 @@ def _draai_film(taak: Taak) -> None:
         scenes = o.scenes
         n = len(scenes)
         try:
-            import imageio.v2 as iio2
             import imageio.v3 as iio
             import numpy as np
-            import torch
-            from diffusers.utils import export_to_video
             from PIL import Image
 
             map_ = UITVOER / taak.job_id
@@ -1049,7 +1131,12 @@ def _draai_film(taak: Taak) -> None:
                 if _bestaat_pad(scenes[i].sleutel):
                     sleutel[i] = Image.open(scenes[i].sleutel).convert("RGB")  # een eerder (goedgekeurd) beeld
             nodig = [i for i in gebruik if i not in sleutel]
-            eenheden_totaal = len(nodig) + 6 * len(te_doen)  # een scène kost ongeveer 6 keer een sleutelbeeld
+            vm = videomodellen.kies(o.videomodel)
+            # Ruwe gewichten voor de voortgang, in "sleutelbeelden": een scène animeren kost er ongeveer 6 (met de
+            # snelle Wan 1), de teksten van alle scènes omzetten samen ongeveer 1 plus een kwart per scène.
+            per_scene = 6 if vm.stappen >= 10 else 1
+            tekst_eenheden = (1 + 0.25 * len(te_doen)) if te_doen else 0
+            eenheden_totaal = len(nodig) + tekst_eenheden + per_scene * len(te_doen)
             klaar_eenheden = 0.0
 
             def zet_voortgang(extra: float = 0.0) -> None:
@@ -1066,20 +1153,45 @@ def _draai_film(taak: Taak) -> None:
             taak.fase = "sleutelbeelden" if nodig else "model"
             sleutel.update(_maak_sleutelbeelden(taak, nodig, scenemap, basis_seed, na_beeld))
 
+            breedte = max(256, o.breedte // vm.maat * vm.maat)
+            hoogte = max(256, o.hoogte // vm.maat * vm.maat)
+            stijl = o.stijl.strip()
+            stappen = vm.stappen
+
+            def aanroep(i: int, bron) -> dict:
+                """De argumenten voor het animeren van scène i: dezelfde bij het vooraf omzetten van de tekst en bij het animeren."""
+                return dict(
+                    prompt=_animatieprompt(scenes[i], stijl), negatief=o.negatief or None,
+                    breedte=breedte, hoogte=hoogte, frames=vm.frames(scenes[i].seconden * vm.fps + 1),
+                    stappen=stappen, seed=basis_seed + i, bron=bron,
+                )
+
             if te_doen:
                 taak.fase = "model"
                 taak.stap = "Videomodel laden… (de eerste keer duurt dit langer)"
                 pipe = _laad_videopijplijn(lambda t: setattr(taak, "stap", t), True, o.videomodel)
+
+                # De teksten van alle scènes in één keer omzetten: de tekstencoder (±11 GB) wordt dan één keer geladen
+                # in plaats van per scène. Het startbeeld is nog niet nodig, een grijs vlak van de goede maat volstaat.
+                vulbeeld = Image.new("RGB", (breedte, hoogte), (127, 127, 127))
+
+                def tekst_meld(k: int, totaal: int) -> None:
+                    controleer_stop()
+                    taak.stap = f"Teksten van de scènes voorbereiden: {k + 1} van {totaal}"
+                    zet_voortgang(tekst_eenheden * k / max(1, totaal))
+
+                videomodellen.bereid_tekst_voor(vm, pipe, [aanroep(i, vulbeeld) for i in te_doen], tekst_meld)
+                klaar_eenheden += tekst_eenheden
+                zet_voortgang()
                 taak.fase = "scenes"
 
-            vm = videomodellen.kies(o.videomodel)
             vorige_laatste: Image.Image | None = None
             for i, sc in enumerate(scenes):
                 controleer_stop()
                 if i not in te_doen:
                     # Hergebruikte scène: voor "doorlopend" moet het laatste beeld wel bekend zijn.
                     if o.modus == "doorlopend" and (i + 1) in te_doen:
-                        vorige_laatste = Image.fromarray(iio.imread(sc.bestand)[-1])
+                        vorige_laatste = _beste_eindbeeld(iio.imread(sc.bestand)[-6:], _startbeeld(sc))
                     continue
 
                 sc.status = "bezig"
@@ -1088,46 +1200,38 @@ def _draai_film(taak: Taak) -> None:
                     start = sleutel[i]
                 else:
                     if vorige_laatste is None:
-                        vorige_laatste = Image.fromarray(iio.imread(scenes[i - 1].bestand)[-1])
+                        vorige_laatste = _beste_eindbeeld(iio.imread(scenes[i - 1].bestand)[-6:], _startbeeld(scenes[i - 1]))
                     start = vorige_laatste
-                    # Bij "doorlopend" is het startbeeld het laatste beeld van de vorige scène: toon dat.
+                    # Bij "doorlopend" is het startbeeld het (beste) laatste beeld van de vorige scène: toon dat.
                     start_pad = scenemap / f"start_{i}.png"
                     start.save(start_pad)
                     sc.sleutel = str(start_pad)
 
-                breedte = max(256, o.breedte // vm.maat * vm.maat)
-                hoogte = max(256, o.hoogte // vm.maat * vm.maat)
-                frames = vm.frames(sc.seconden * vm.fps + 1)
                 start = start.convert("RGB").resize((breedte, hoogte), Image.LANCZOS)
-                stappen = vm.stappen
-                seed = basis_seed + i
-                sc.seed = seed
+                sc.seed = basis_seed + i
                 teller = f"Scène {i + 1} van {n}"
-                taak.stap = f"{teller}: tekst en beeld voorbereiden"
+                taak.stap = f"{teller}: beeld voorbereiden"
 
                 def stap_klaar(pipe_, st, _t, kwargs, teller=teller, sc_=sc):
                     if taak.stop:
                         pipe_._interrupt = True
                     taak.stap = f"{teller}: animeren, stap {st + 1} van {stappen}"
                     sc_.voortgang = (st + 1) / stappen
-                    zet_voortgang(6 * (st + 1) / stappen)
+                    zet_voortgang(per_scene * (st + 1) / stappen)
                     return kwargs
 
-                beelden = vm.roep_aan(
-                    pipe, prompt=(sc.beweging or sc.beeld or "natural motion"),
-                    negatief="worst quality, inconsistent motion, blurry, jittery, distorted",
-                    breedte=breedte, hoogte=hoogte, frames=frames, stappen=stappen, seed=seed,
-                    bron=start, stap_klaar=stap_klaar,
-                )
+                beelden = vm.roep_aan(pipe, **aanroep(i, start), stap_klaar=stap_klaar)
                 controleer_stop()
 
+                taak.stap = f"{teller}: opslaan"
                 pad = scenemap / f"scene_{i}.mp4"
-                export_to_video(_naar_24fps(beelden, vm.fps), str(pad), fps=24)
+                _schrijf_video(beelden, pad, vm.fps, CRF_SCENE)
                 sc.bestand = str(pad)
                 sc.status = "klaar"
                 sc.voortgang = 1.0
-                vorige_laatste = beelden[-1]
-                klaar_eenheden += 6
+                if o.modus == "doorlopend":
+                    vorige_laatste = _beste_eindbeeld(beelden, start)
+                klaar_eenheden += per_scene
                 zet_voortgang()
 
             # Samenvoegen, met een zachte overgang waar dat gevraagd is.
@@ -1135,7 +1239,7 @@ def _draai_film(taak: Taak) -> None:
             taak.stap = "Film samenvoegen…"
             overlap = 12 if o.overgang == "zacht" else 0
             uit = map_ / "film.mp4"
-            schrijver = iio2.get_writer(str(uit), fps=24, codec="libx264", quality=8, macro_block_size=None)
+            schrijver = _video_schrijver(uit, 24, CRF_EIND)
             try:
                 tail = None
                 for idx, sc in enumerate(scenes):

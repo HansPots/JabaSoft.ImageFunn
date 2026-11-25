@@ -9,7 +9,10 @@ als AI Studio en Tab Studio. Twee kanten:
   Python-service in `ImageFunn.Image`. Standaard **RealVisXL V5.0** (fotorealistisch, een SDXL-model); het
   model is per opdracht te kiezen, en de standaard in Jabasoft > Instellingen. **JuggernautXL Ragnarok**
   wordt gevonden in de modelmap van LM Studio en de eerste keer omgezet (±1 minuut, daarna 5 GB gecachet in
-  `ImageFunn.Image/modellen`). Verder: `sdxl` (het gewone SDXL-basismodel) en `flux` (FLUX.1-schnell).
+  `ImageFunn.Image/modellen`). Verder `flux` (FLUX.1-schnell).
+- **Video en film** - een beeld laten bewegen, een video uit tekst, of een hele film uit scènes. Videomodel
+  **Wan 2.2 (5B)**: `wan` (30 stappen, beste kwaliteit) of `wan_snel` (de gedistilleerde FastWan van
+  FastVideo, 3 stappen; alleen de transformer, ±10 GB, wordt de eerste keer gedownload).
 
 ## Starten
 

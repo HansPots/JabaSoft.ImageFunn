@@ -15,7 +15,6 @@ public partial class Beeldserviceinstellingen : UserControl
     [
         ("realvis", "RealVisXL V5.0 - fotorealistisch (standaard)"),
         ("juggernaut", "JuggernautXL Ragnarok - fotorealistisch"),
-        ("sdxl", "SDXL-basismodel"),
         ("flux", "FLUX.1-schnell - snel, 4 stappen (geen bijsturen of cast-gelijkenis)"),
     ];
 

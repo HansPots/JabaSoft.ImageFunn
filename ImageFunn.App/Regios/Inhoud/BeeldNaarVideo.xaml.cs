@@ -145,7 +145,7 @@ public partial class BeeldNaarVideo : UserControl
     }
 
     // Beelden per seconde per model (zie videomodellen.py): bepaalt hoeveel seconden een aantal beelden duurt.
-    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["sana"] = 16, ["kandinsky"] = 24 };
+    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["wan_snel"] = 24 };
 
     private static readonly (string Naam, string Tag)[] Duren = [("Kort", "49"), ("Normaal", "97"), ("Lang", "145")];
 

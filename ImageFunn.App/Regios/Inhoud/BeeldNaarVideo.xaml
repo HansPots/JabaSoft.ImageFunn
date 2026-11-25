@@ -84,10 +84,9 @@
 
                 <StackPanel Grid.Row="3">
                     <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,14,0,0" SelectionChanged="ModelKeuze_SelectionChanged"
-                              ToolTip="Wan 2.2: beweegt personen en dingen echt, maar is traag en gebruikt veel geheugen. SANA-Video: snel en licht. Kandinsky 5 Lite: snel, 24 beelden per seconde.">
-                        <ComboBoxItem Content="Videomodel: Wan 2.2 (echtere beweging, trager)" Tag="wan" />
-                        <ComboBoxItem Content="Videomodel: SANA-Video (snel, licht)" Tag="sana" />
-                        <ComboBoxItem Content="Videomodel: Kandinsky 5 Lite (snel)" Tag="kandinsky" />
+                              ToolTip="Wan 2.2: beweegt personen en dingen echt, maar is traag (30 stappen). Wan 2.2 snel: hetzelfde model, gedistilleerd tot 3 stappen; vele malen sneller, soms iets minder fijn.">
+                        <ComboBoxItem Content="Videomodel: Wan 2.2 (beste kwaliteit, trager)" Tag="wan" />
+                        <ComboBoxItem Content="Videomodel: Wan 2.2 snel (3 stappen)" Tag="wan_snel" />
                     </ComboBox>
                     <Grid Margin="0,14,0,0">
                     <Grid.ColumnDefinitions>

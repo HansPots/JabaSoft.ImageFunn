@@ -115,14 +115,12 @@
                                       ToolTip="Welk model de beelden maakt (sleutelbeelden en de cast). RealVisXL en Juggernaut zijn realistisch, met een eigen look. FLUX.1-schnell is snel, maar houdt spelers en plekken niet gelijk tussen de scènes (geen cast-gelijkenis); bijsturen gaat dan met RealVisXL.">
                                 <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
                                 <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
-                                <ComboBoxItem Content="Beeldmodel: SDXL-basismodel" Tag="sdxl" />
                                 <ComboBoxItem Content="Beeldmodel: FLUX.1-schnell (snel, zonder cast-gelijkenis)" Tag="flux" />
                             </ComboBox>
                             <ComboBox x:Name="VideomodelKeuze" SelectedIndex="0" Margin="0,8,0,0"
-                                      ToolTip="Wan 2.2 beweegt echt en blijft bij langere scènes netjes, maar gebruikt bijna al je werkgeheugen: sluit andere programma's.">
-                                <ComboBoxItem Content="Videomodel: Wan 2.2 (echter, trager)" Tag="wan" />
-                                <ComboBoxItem Content="Videomodel: SANA-Video (snel, licht)" Tag="sana" />
-                                <ComboBoxItem Content="Videomodel: Kandinsky 5 Lite (snel)" Tag="kandinsky" />
+                                      ToolTip="Wan 2.2 beweegt echt en blijft bij langere scènes netjes, maar gebruikt bijna al je werkgeheugen: sluit andere programma's. Wan 2.2 snel is hetzelfde model in 3 stappen: vele malen sneller, soms iets minder fijn - handig om eerst het hele verhaal te bekijken.">
+                                <ComboBoxItem Content="Videomodel: Wan 2.2 (beste kwaliteit, trager)" Tag="wan" />
+                                <ComboBoxItem Content="Videomodel: Wan 2.2 snel (3 stappen)" Tag="wan_snel" />
                             </ComboBox>
 
                             <Rectangle Height="1" Fill="{DynamicResource BorderBrush}" Margin="0,18,0,14" />

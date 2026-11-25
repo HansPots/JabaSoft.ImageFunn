@@ -48,8 +48,8 @@ public static class Preferences
     public const double StandaardVerverstijd = 5;
 
     /// <summary>
-    /// Het standaard beeldmodel van de beeldservice ("realvis", "juggernaut",
-    /// "sdxl" of "flux") - gaat als IMAGEFUNN_MODEL mee bij het starten (zie
+    /// Het standaard beeldmodel van de beeldservice ("realvis", "juggernaut"
+    /// of "flux") - gaat als IMAGEFUNN_MODEL mee bij het starten (zie
     /// ImageServiceLauncher). Leeg = nooit gekozen: dan beslist de service zelf
     /// (of een omgevingsvariabele die al op de pc staat).
     /// </summary>

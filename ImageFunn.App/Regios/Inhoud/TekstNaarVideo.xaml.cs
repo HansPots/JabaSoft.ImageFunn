@@ -51,15 +51,17 @@ public partial class TekstNaarVideo : UserControl
     }
 
     // Elk videomodel heeft zijn eigen goede formaten (zie videomodellen.py voor de afrondingsmaat).
+    private static readonly (string Naam, string Tag)[] WanFormaten =
+        [("Liggend 704 × 480", "704x480"), ("Staand 480 × 704", "480x704"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")];
+
     private static readonly Dictionary<string, (string Naam, string Tag)[]> Formaten = new()
     {
-        ["wan"] = [("Liggend 704 × 480", "704x480"), ("Staand 480 × 704", "480x704"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
-        ["sana"] = [("Liggend 832 × 480", "832x480"), ("Staand 480 × 832", "480x832"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
-        ["kandinsky"] = [("Liggend 768 × 512", "768x512"), ("Staand 512 × 768", "512x768"), ("Vierkant 512 × 512", "512x512"), ("Klein vierkant 384 × 384 (sneller)", "384x384")],
+        ["wan"] = WanFormaten,
+        ["wan_snel"] = WanFormaten,
     };
 
     // Beelden per seconde per model (zie videomodellen.py): bepaalt hoeveel seconden een aantal beelden duurt.
-    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["sana"] = 16, ["kandinsky"] = 24 };
+    private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["wan_snel"] = 24 };
 
     private static readonly (string Naam, string Tag)[] Duren = [("Kort", "49"), ("Normaal", "97"), ("Lang", "145")];
 
