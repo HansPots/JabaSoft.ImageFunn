@@ -12,7 +12,9 @@ namespace ImageFunn.App.ImageService;
 /// </summary>
 public sealed class ImageServiceClient
 {
-    public const string DefaultBaseUrl = "http://localhost:5330";
+    // Niet "localhost": uvicorn luistert alleen op 127.0.0.1, en dan probeert Windows eerst ::1. Dat kost 2 seconden per
+    // nieuwe verbinding (gemeten: 2,05 s tegen 0,03 s), langer dan de statuscontrole van de starter wacht.
+    public const string DefaultBaseUrl = "http://127.0.0.1:5330";
 
     private readonly HttpClient _client;
 
@@ -21,20 +23,61 @@ public sealed class ImageServiceClient
         _client = new HttpClient { BaseAddress = new Uri(baseUrl), Timeout = TimeSpan.FromSeconds(30) };
     }
 
+    /// <summary>Krijgt te horen dat de service voor een nieuwe opdracht eerst moet opstarten, om op het scherm te zetten.</summary>
+    public IProgress<string>? Opstartmelding { get; set; }
+
+    /// <summary>De tekst voor op het scherm bij een mislukte aanroep: niet bereikbaar is iets anders dan een geweigerde opdracht.</summary>
+    public static string Foutmelding(Exception fout) => fout switch
+    {
+        BeeldServiceFout => fout.Message,
+        HttpRequestException { StatusCode: not null } => $"De beeldservice weigerde dit: {fout.Message}",
+        HttpRequestException or TaskCanceledException => $"Kon de beeldservice niet bereiken: {fout.Message}",
+        _ => $"Er ging iets mis: {fout.Message}",
+    };
+
+    /// <summary>Als EnsureSuccessStatusCode, maar met wat de service zelf als reden geeft.</summary>
+    private static async Task ControleerAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var reden = (await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)).Trim();
+            throw new HttpRequestException(reden.Length > 300 ? reden[..300] + "…" : reden, null, response.StatusCode);
+        }
+    }
+
     /// <summary>
     /// Voert een aanroep uit en start de service als die niet bereikbaar blijkt. De service stopt zichzelf als hij een
-    /// tijd niets te doen had (zie ONTLAAD_NA in service.py), en wordt dan hier weer opgestart.
+    /// tijd niets te doen had (zie ONTLAAD_NA in service.py), en wordt dan hier weer opgestart. Meer dan één poging:
+    /// de service kan net aan het stoppen zijn, en dan geeft hij nog antwoord terwijl de volgende aanroep al mislukt.
+    /// Een foutantwoord van de service zelf (met statuscode) wordt niet herhaald.
     /// </summary>
-    private static async Task<T> MetHerstelAsync<T>(Func<Task<T>> actie, CancellationToken cancellationToken)
+    private static async Task<T> MetHerstelAsync<T>(Func<Task<T>> actie, CancellationToken cancellationToken, IProgress<string>? melding = null)
     {
-        try
+        const int Pogingen = 3;
+        for (var poging = 1; ; poging++)
         {
-            return await actie().ConfigureAwait(false);
-        }
-        catch (HttpRequestException)
-        {
-            await ImageServiceLauncher.EnsureRunningAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-            return await actie().ConfigureAwait(false);
+            try
+            {
+                return await actie().ConfigureAwait(false);
+            }
+            catch (HttpRequestException fout) when (fout.StatusCode is null)
+            {
+                if (poging == Pogingen)
+                {
+                    throw;
+                }
+
+                if (poging > 1)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                }
+
+                var startFout = await ImageServiceLauncher.EnsureRunningAsync(melding: melding, cancellationToken: cancellationToken).ConfigureAwait(false);
+                if (startFout is not null)
+                {
+                    throw new BeeldServiceFout(startFout, fout);
+                }
+            }
         }
     }
 
@@ -43,24 +86,89 @@ public sealed class ImageServiceClient
     {
         // Eerst het geheugen van de GPU vrijmaken: een nog geladen chatmodel laat te weinig ruimte over voor het beeld- en videomodel.
         await Ai.ModelOntlader.OntlaadAsync().ConfigureAwait(false);
+        await HerstartBijAnderModelAsync(opdracht, cancellationToken).ConfigureAwait(false);
 
         return await MetHerstelAsync(
             async () =>
             {
                 using var response = await _client.PostAsJsonAsync("/jobs", opdracht, cancellationToken).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
+                await ControleerAsync(response, cancellationToken).ConfigureAwait(false);
 
                 var body = await response.Content.ReadFromJsonAsync<StartJobResponse>(cancellationToken).ConfigureAwait(false);
                 return body?.JobId ?? throw new InvalidOperationException("De beeldservice gaf geen job_id terug.");
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            Opstartmelding).ConfigureAwait(false);
     }
 
-    /// <summary>Vraagt de huidige stand van een taak op - de aanroeper polt dit tot IsKlaar of IsMislukt.</summary>
+    /// <summary>
+    /// Laat de service opnieuw starten als er een ander model geladen is dan deze opdracht wil. PyTorch geeft het
+    /// werkgeheugen pas terug als het proces stopt (zie ONTLAAD_NA in service.py); bij wisselen binnen één proces stapelt
+    /// het op tot het virtuele geheugen van Windows vol is en de service crasht. Loopt er een opdracht, dan gebeurt er niets.
+    /// </summary>
+    private async Task HerstartBijAnderModelAsync(BeeldOpdracht opdracht, CancellationToken cancellationToken)
+    {
+        var gezond = await GetHealthAsync(cancellationToken).ConfigureAwait(false);
+        if (gezond is null || !HeeftAnderModel(gezond, opdracht))
+        {
+            return;
+        }
+
+        Opstartmelding?.Report("Ander model: de beeldservice start opnieuw om het geheugen vrij te maken…");
+        if (!await MaakVideogeheugenVrijAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        // De service stopt kort na zijn antwoord; een opdracht die daar nog tussenkomt zou mee verdwijnen.
+        for (var i = 0; i < 20 && await GetHealthAsync(cancellationToken).ConfigureAwait(false) is not null; i++)
+        {
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static bool HeeftAnderModel(BeeldServiceGezondheid gezond, BeeldOpdracht opdracht)
+    {
+        var wilBeeld = opdracht.Soort != "video";
+        var wilVideo = opdracht.Soort is "video" or "film";
+        var beeldmodel = string.IsNullOrEmpty(opdracht.Beeldmodel) ? gezond.Model : opdracht.Beeldmodel;
+
+        // Bijsturen kan niet met FLUX: de service gebruikt dan RealVisXL (zie _draai_bewerk in service.py).
+        if (opdracht.Soort == "beeld" && opdracht.BronBeeld is not null && beeldmodel == "flux")
+        {
+            beeldmodel = "realvis";
+        }
+
+        return gezond.ModelGeladen && (!wilBeeld || gezond.BeeldModel != beeldmodel)
+               || gezond.VideoModelGeladen && (!wilVideo || gezond.VideoModel != opdracht.Videomodel);
+    }
+
+    /// <summary>
+    /// Vraagt de huidige stand van een taak op - de aanroeper polt dit tot IsKlaar of IsMislukt. Blijft de service
+    /// onbereikbaar, dan is hij tijdens de opdracht gestopt en is die verloren: dat zegt de foutmelding dan ook.
+    /// </summary>
     public async Task<BeeldJobStatus> GetStatusAsync(string jobId, CancellationToken cancellationToken = default)
     {
-        var status = await _client.GetFromJsonAsync<BeeldJobStatus>($"/jobs/{jobId}", cancellationToken).ConfigureAwait(false);
-        return status ?? throw new InvalidOperationException("De beeldservice gaf geen taakstatus terug.");
+        const int Pogingen = 3;
+        for (var poging = 1; ; poging++)
+        {
+            try
+            {
+                var status = await _client.GetFromJsonAsync<BeeldJobStatus>($"/jobs/{jobId}", cancellationToken).ConfigureAwait(false);
+                return status ?? throw new InvalidOperationException("De beeldservice gaf geen taakstatus terug.");
+            }
+            catch (HttpRequestException fout) when (fout.StatusCode is null)
+            {
+                if (poging == Pogingen)
+                {
+                    throw new BeeldServiceFout(
+                        "De beeldservice is tijdens deze opdracht gestopt, waarschijnlijk doordat het geheugen vol raakte. Probeer het opnieuw; de service start dan vanzelf weer.",
+                        fout);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     /// <summary>Alle eerder gemaakte beelden (soort "beeld") of video's (soort "video"), nieuwste eerst. Overleeft een herstart van de service (zie meta.json in service.py).</summary>
@@ -79,7 +187,7 @@ public sealed class ImageServiceClient
             async () =>
             {
                 using var response = await _client.DeleteAsync($"/jobs/{jobId}", cancellationToken).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
+                await ControleerAsync(response, cancellationToken).ConfigureAwait(false);
                 return true;
             },
             cancellationToken).ConfigureAwait(false);
@@ -89,7 +197,7 @@ public sealed class ImageServiceClient
     public async Task StopJobAsync(string jobId, CancellationToken cancellationToken = default)
     {
         using var response = await _client.PostAsync($"/jobs/{jobId}/stop", null, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        await ControleerAsync(response, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -131,3 +239,6 @@ public sealed class ImageServiceClient
         public string? JobId { get; set; }
     }
 }
+
+/// <summary>Een fout van de beeldservice met een tekst die zo op het scherm kan.</summary>
+public sealed class BeeldServiceFout(string melding, Exception? oorzaak = null) : Exception(melding, oorzaak);

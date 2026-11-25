@@ -46,6 +46,12 @@ public partial class FilmMaker : UserControl
 
     private bool _galerijVullen;
 
+    /// <summary>Welke opdrachten de galerij nu toont; is dat niet veranderd, dan blijft hij staan zoals hij is.</summary>
+    private string? _galerijHandtekening;
+
+    /// <summary>De voorkeur uit Instellingen die al is toegepast: een andere keuze op dit scherm blijft daarna staan.</summary>
+    private string? _modelVoorkeur;
+
     private bool _bezig;
 
     private string? _jobId;
@@ -74,6 +80,7 @@ public partial class FilmMaker : UserControl
     public FilmMaker(IAiBrokerClient broker)
     {
         InitializeComponent();
+        _service.Opstartmelding = new Progress<string>(tekst => StatusText.Text = tekst);
         _schrijver = new Verhaalschrijver(broker);
 
         _scenes.Add(NieuweScene());
@@ -81,6 +88,14 @@ public partial class FilmMaker : UserControl
         {
             ToonTab(_tab);
             Selecteer(_gekozen < 0 ? 0 : _gekozen);
+
+            // Het standaard beeldmodel uit Instellingen, de eerste keer en als het daar veranderd is.
+            if (Layout.Preferences.Beeldmodel != _modelVoorkeur)
+            {
+                _modelVoorkeur = Layout.Preferences.Beeldmodel;
+                KiesTag(BeeldmodelKeuze, _modelVoorkeur);
+            }
+
             await VulGalerijAsync();
         };
     }
@@ -522,7 +537,7 @@ public partial class FilmMaker : UserControl
         }
         catch (Exception fout)
         {
-            StatusText.Text = $"Kon de beeldservice niet bereiken: {fout.Message}";
+            StatusText.Text = ImageServiceClient.Foutmelding(fout);
         }
         finally
         {
@@ -913,8 +928,7 @@ public partial class FilmMaker : UserControl
         var dialoog = new SaveFileDialog { Filter = "MP4-video (*.mp4)|*.mp4", FileName = "film.mp4" };
         if (dialoog.ShowDialog() == true)
         {
-            File.Copy(_filmBestand, dialoog.FileName, overwrite: true);
-            StatusText.Text = $"Opgeslagen: {dialoog.FileName}";
+            StatusText.Text = GalerijPrullenbak.BewaarKopie(_filmBestand, dialoog.FileName);
         }
     }
 
@@ -925,9 +939,16 @@ public partial class FilmMaker : UserControl
         _galerijVullen = true;
         try
         {
-            var lijst = await _service.ListJobsAsync("film");
+            var lijst = (await _service.ListJobsAsync("film")).Where(t => t.Bestand is not null && File.Exists(t.Bestand)).ToList();
+            var handtekening = GalerijPrullenbak.Handtekening(lijst);
+            if (handtekening == _galerijHandtekening)
+            {
+                return;
+            }
+
+            _galerijHandtekening = handtekening;
             Galerij.Items.Clear();
-            foreach (var taak in lijst.Where(t => t.Bestand is not null && File.Exists(t.Bestand)))
+            foreach (var taak in lijst)
             {
                 var tekst = taak.Prompt.Length > 40 ? taak.Prompt[..40] + "…" : taak.Prompt;
                 Galerij.Items.Add(new ListBoxItem
@@ -939,9 +960,9 @@ public partial class FilmMaker : UserControl
                 });
             }
         }
-        catch (Exception)
+        catch (Exception fout)
         {
-            // Service (nog) niet bereikbaar: geen galerij, geen ruzie.
+            StatusText.Text = $"De galerij kon niet geladen worden. {ImageServiceClient.Foutmelding(fout)}";
         }
         finally
         {
@@ -1058,6 +1079,8 @@ public partial class FilmMaker : UserControl
             }
 
             KiesTag(FormaatKeuze, $"{taak.Breedte}x{taak.Hoogte}");
+            KiesTag(VideomodelKeuze, taak.Videomodel);
+            KiesTag(BeeldmodelKeuze, taak.Beeldmodel);
             Selecteer(0);
         }
     }
@@ -1111,8 +1134,15 @@ public partial class FilmMaker : UserControl
             Cast = _cast,
             Scenes = _scenes.Select(Kopie).ToList(),
         };
-        File.WriteAllText(dialoog.FileName, JsonSerializer.Serialize(verhaal, JsonOpties));
-        StatusText.Text = $"Verhaal opgeslagen: {dialoog.FileName}";
+        try
+        {
+            File.WriteAllText(dialoog.FileName, JsonSerializer.Serialize(verhaal, JsonOpties));
+            StatusText.Text = $"Verhaal opgeslagen: {dialoog.FileName}";
+        }
+        catch (Exception fout) when (fout is IOException or UnauthorizedAccessException)
+        {
+            StatusText.Text = $"Opslaan mislukt: {fout.Message}";
+        }
     }
 
     private void VerhaalOpenen_Click(object sender, RoutedEventArgs e)

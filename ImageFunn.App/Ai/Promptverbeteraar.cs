@@ -3,12 +3,6 @@ using Jabasoft.Base.Logging;
 
 namespace ImageFunn.App.Ai;
 
-/// <summary>
-/// Maakt van een omschrijving in gewone (Nederlandse) taal een prompt die een
-/// beeldmodel begrijpt. SDXL en FLUX lezen alleen Engels: een Nederlandse zin
-/// wordt grotendeels genegeerd, waardoor je een ander beeld krijgt dan je vroeg.
-/// Loopt via de AI-broker met het gewone chatmodel.
-/// </summary>
 /// <summary>Voor welk soort model de prompt bedoeld is.</summary>
 public enum Promptsoort
 {
@@ -25,6 +19,12 @@ public enum Promptsoort
     Scene,
 }
 
+/// <summary>
+/// Maakt van een omschrijving in gewone (Nederlandse) taal een prompt die een
+/// beeldmodel begrijpt. SDXL en FLUX lezen alleen Engels: een Nederlandse zin
+/// wordt grotendeels genegeerd, waardoor je een ander beeld krijgt dan je vroeg.
+/// Loopt via de AI-broker met het gewone chatmodel.
+/// </summary>
 public sealed class Promptverbeteraar(IAiBrokerClient broker)
 {
     private const string Instructie =
@@ -32,7 +32,7 @@ public sealed class Promptverbeteraar(IAiBrokerClient broker)
         "Translate it to English and turn it into ONE flowing prompt of at most 70 words. " +
         "Keep EVERY element the user mentions, exactly as asked (subjects, their count, their relative positions " +
         "such as 'in front of' or 'behind'), and never drop or replace one. Put the main subjects first. " +
-        "Then add concrete visual detail that fits the request: setting, lighting, mood, colours, composition and " +
+        "Then add concrete visual detail that fits the request: setting, lighting, mood, colours and composition. " +
         "Keep any style the user mentions (for example watercolour or photo), but do NOT invent a style of your own: the style is added separately. Do not add new subjects. " +
         "Output ONLY the prompt: no quotes, no explanation, no line breaks.";
 

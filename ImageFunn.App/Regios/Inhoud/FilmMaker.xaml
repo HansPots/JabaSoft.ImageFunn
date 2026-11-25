@@ -115,6 +115,7 @@
                                       ToolTip="Welk model de beelden maakt (sleutelbeelden en de cast). RealVisXL en Juggernaut zijn realistisch, met een eigen look. FLUX.1-schnell is snel, maar houdt spelers en plekken niet gelijk tussen de scènes (geen cast-gelijkenis); bijsturen gaat dan met RealVisXL.">
                                 <ComboBoxItem Content="Beeldmodel: RealVisXL" Tag="realvis" />
                                 <ComboBoxItem Content="Beeldmodel: Juggernaut XL" Tag="juggernaut" />
+                                <ComboBoxItem Content="Beeldmodel: SDXL-basismodel" Tag="sdxl" />
                                 <ComboBoxItem Content="Beeldmodel: FLUX.1-schnell (snel, zonder cast-gelijkenis)" Tag="flux" />
                             </ComboBox>
                             <ComboBox x:Name="VideomodelKeuze" SelectedIndex="0" Margin="0,8,0,0"

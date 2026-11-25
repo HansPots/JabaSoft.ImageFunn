@@ -56,6 +56,9 @@ class Videomodel:
             "num_inference_steps": stappen,
             **self.args(),
             "generator": torch.Generator("cuda").manual_seed(seed),
+            # SANA vervangt het formaat anders door een vast formaat uit zijn eigen tabel; daar staan maten in die zijn
+            # eigen controle weigert (624 × 624 bij een vierkant beeld: "have to be divisible by 32").
+            "use_resolution_binning": False,
         }
         if bron is not None:
             kw["image"] = bron

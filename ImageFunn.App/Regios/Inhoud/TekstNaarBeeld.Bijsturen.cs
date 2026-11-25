@@ -183,9 +183,11 @@ public partial class TekstNaarBeeld
             var (nieuw, fout) = await _verbeteraar.VerbeterAsync(
                 $"ORIGINAL PROMPT: {basis}\nCHANGE REQUESTS:\n{WijzigingenTekst(wijziging)}", CancellationToken.None, Promptsoort.Bewerk);
             var prompt = nieuw ?? $"{basis}, {wijziging}";
+            string? opmerking = null;
             if (nieuw is null)
             {
-                StatusText.Text = $"Prompt bijwerken mislukt ({fout}) - de wijziging wordt achter de prompt gezet.";
+                opmerking = $"Prompt bijwerken mislukt ({fout}), de wijziging is achter de prompt gezet. ";
+                StatusText.Text = opmerking;
             }
 
             if (gebiedAan)
@@ -209,11 +211,13 @@ public partial class TekstNaarBeeld
                 Sterkte = SterkteSlider.Value / 100,
                 Seed = seed,
             });
+            _lopendeTaak = jobId;
+            StopButton.IsEnabled = true;
 
             while (true)
             {
                 var status = await _service.GetStatusAsync(jobId);
-                StatusText.Text = status.Stap;
+                StatusText.Text = opmerking + status.Stap;
                 Voortgang.Value = status.Voortgang;
 
                 if (status.IsKlaar && status.Bestand is { } bestand)
@@ -221,14 +225,14 @@ public partial class TekstNaarBeeld
                     VoegVersieToe(bestand, prompt, wijziging, gebiedAan);
                     Toon(bestand, prompt);
                     WijzigBox.Text = string.Empty;
-                    StatusText.Text = $"Bijgestuurd - seed {status.Seed}. Het origineel staat nog in de galerij. Prompt: {prompt}";
                     await VulGalerijAsync();
+                    StatusText.Text = $"{opmerking}Bijgestuurd - seed {status.Seed}. Het origineel staat nog in de galerij. Prompt: {prompt}";
                     break;
                 }
 
                 if (status.IsMislukt)
                 {
-                    StatusText.Text = $"Mislukt: {status.Foutmelding}";
+                    StatusText.Text = opmerking + status.Eindmelding;
                     break;
                 }
 
@@ -237,10 +241,12 @@ public partial class TekstNaarBeeld
         }
         catch (Exception fout)
         {
-            StatusText.Text = $"Kon de beeldservice niet bereiken: {fout.Message}";
+            StatusText.Text = ImageServiceClient.Foutmelding(fout);
         }
         finally
         {
+            _lopendeTaak = null;
+            StopButton.IsEnabled = false;
             BijstuurButton.IsEnabled = true;
             GenereerButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;

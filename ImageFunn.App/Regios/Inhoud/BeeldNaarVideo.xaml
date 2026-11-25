@@ -84,7 +84,7 @@
 
                 <StackPanel Grid.Row="3">
                     <ComboBox x:Name="ModelKeuze" SelectedIndex="0" Margin="0,14,0,0" SelectionChanged="ModelKeuze_SelectionChanged"
-                              ToolTip="Wan 2.2: beweegt personen en dingen echt, maar is traag en gebruikt veel geheugen. SANA-Video: snel en licht. Kandinsky 5 Lite: snel, 24 beelden per seconde. HunyuanVideo 1.5: de beste kwaliteit, maar het zwaarst en trager (kan alleen een beeld laten bewegen).">
+                              ToolTip="Wan 2.2: beweegt personen en dingen echt, maar is traag en gebruikt veel geheugen. SANA-Video: snel en licht. Kandinsky 5 Lite: snel, 24 beelden per seconde.">
                         <ComboBoxItem Content="Videomodel: Wan 2.2 (echtere beweging, trager)" Tag="wan" />
                         <ComboBoxItem Content="Videomodel: SANA-Video (snel, licht)" Tag="sana" />
                         <ComboBoxItem Content="Videomodel: Kandinsky 5 Lite (snel)" Tag="kandinsky" />
@@ -119,6 +119,8 @@
                             Style="{DynamicResource AccentButtonStyle}" />
                         <Button x:Name="CleanButton" Content="Clean" Click="CleanButton_Click" Margin="10,0,0,0"
                                 ToolTip="Clean: je tekst gaat precies zo naar het model. Niet vertaald, niet verbeterd en zonder stijltekst erbij. Schrijf dan zelf in het Engels." Style="{DynamicResource AccentButtonStyle}" />
+                        <Button x:Name="StopButton" Content="Stop" Click="StopButton_Click" Margin="10,0,0,0" IsEnabled="False"
+                                ToolTip="Breekt de opdracht af na de huidige stap." Style="{DynamicResource AccentButtonStyle}" />
                     </StackPanel>
                     <ProgressBar x:Name="Voortgang" Height="6" Minimum="0" Maximum="1" Margin="0,10,0,0"
                                  Visibility="Collapsed" Foreground="{DynamicResource AccentBrush}"

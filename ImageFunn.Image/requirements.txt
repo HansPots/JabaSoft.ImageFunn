@@ -12,6 +12,8 @@ sentencepiece
 protobuf
 # 4-bit kwantisatie: FLUX past daarmee op een kaart van 12 GB.
 bitsandbytes
+# Juggernaut XL staat als GGUF in de modelmap van LM Studio; zonder dit pakket valt hij terug op het gewone SDXL.
+gguf
 fastapi
 uvicorn
 pillow

@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using ImageFunn.App.ImageService;
 using Pad = System.IO.Path;
 using Pictogram = System.Windows.Shapes.Path;
 
@@ -57,6 +58,23 @@ internal static class GalerijPrullenbak
         raster.MouseEnter += (_, _) => knop.Visibility = Visibility.Visible;
         raster.MouseLeave += (_, _) => knop.Visibility = Visibility.Hidden;
         return raster;
+    }
+
+    /// <summary>Waaraan een galerij ziet of er iets veranderd is: zo niet, dan hoeft hij niet opnieuw opgebouwd te worden en blijft de selectie staan.</summary>
+    public static string Handtekening(IEnumerable<BeeldJobStatus> taken) => string.Join(",", taken.Select(t => t.JobId));
+
+    /// <summary>Kopieert een bestand naar de plek die de gebruiker koos en geeft de melding voor op het scherm. Bijvoorbeeld als het doelbestand open staat mislukt dat.</summary>
+    public static string BewaarKopie(string bron, string doel)
+    {
+        try
+        {
+            File.Copy(bron, doel, overwrite: true);
+            return $"Opgeslagen: {doel}";
+        }
+        catch (Exception fout) when (fout is IOException or UnauthorizedAccessException)
+        {
+            return $"Opslaan mislukt: {fout.Message}";
+        }
     }
 
     /// <summary>Vraagt of het echt weg mag. Standaard staat het antwoord op Nee.</summary>

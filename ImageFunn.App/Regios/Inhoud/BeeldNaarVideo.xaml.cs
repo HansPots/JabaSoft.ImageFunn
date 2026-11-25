@@ -37,9 +37,16 @@ public partial class BeeldNaarVideo : UserControl
 
     private bool _galerijVullen;
 
+    /// <summary>Welke opdrachten de galerij nu toont; is dat niet veranderd, dan blijft hij staan zoals hij is.</summary>
+    private string? _galerijHandtekening;
+
+    /// <summary>De opdracht die nu loopt, om te kunnen stoppen.</summary>
+    private string? _lopendeTaak;
+
     public BeeldNaarVideo(IAiBrokerClient broker)
     {
         InitializeComponent();
+        _service.Opstartmelding = new Progress<string>(tekst => StatusText.Text = tekst);
 
         // "Automatisch vertalen en verbeteren": standaard uit, en de keuze wordt
         // onthouden voor de volgende keer (zie Layout.Preferences.Verbeteren).
@@ -119,6 +126,24 @@ public partial class BeeldNaarVideo : UserControl
         MaakButton_Click(sender, e);
     }
 
+    private async void StopButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lopendeTaak is null)
+        {
+            return;
+        }
+
+        StopButton.IsEnabled = false;
+        try
+        {
+            await _service.StopJobAsync(_lopendeTaak);
+        }
+        catch (Exception fout)
+        {
+            StatusText.Text = $"Stoppen mislukt: {ImageServiceClient.Foutmelding(fout)}";
+        }
+    }
+
     // Beelden per seconde per model (zie videomodellen.py): bepaalt hoeveel seconden een aantal beelden duurt.
     private static readonly Dictionary<string, int> BeeldenPerSeconde = new() { ["wan"] = 24, ["sana"] = 16, ["kandinsky"] = 24 };
 
@@ -165,6 +190,7 @@ public partial class BeeldNaarVideo : UserControl
         try
         {
             var beweging = PromptBox.Text.Trim();
+            string? opmerking = null;
 
             // Het videomodel leest alleen Engels. Lukt het omschrijven niet, dan gaat de originele tekst mee.
             if (!clean && VerbeterBox.IsChecked == true && beweging.Length > 0)
@@ -177,7 +203,8 @@ public partial class BeeldNaarVideo : UserControl
                 }
                 else
                 {
-                    StatusText.Text = $"Verbeteren mislukt ({fout}) - de originele tekst wordt gebruikt.";
+                    opmerking = $"Verbeteren mislukt ({fout}), de originele tekst is gebruikt. ";
+                    StatusText.Text = opmerking;
                 }
             }
 
@@ -191,12 +218,14 @@ public partial class BeeldNaarVideo : UserControl
                 Breedte = int.Parse(formaat[0]),
                 Hoogte = int.Parse(formaat[1]),
             });
+            _lopendeTaak = jobId;
+            StopButton.IsEnabled = true;
 
             var voorproefNr = 0;
             while (true)
             {
                 var status = await _service.GetStatusAsync(jobId);
-                StatusText.Text = status.Stap;
+                StatusText.Text = opmerking + status.Stap;
                 Voortgang.Value = status.Voortgang;
                 if (status.VoorproefNr != voorproefNr)
                 {
@@ -208,14 +237,14 @@ public partial class BeeldNaarVideo : UserControl
                 if (status.IsKlaar && status.Bestand is { } bestand)
                 {
                     Speel(bestand);
-                    StatusText.Text = $"Klaar - seed {status.Seed}.";
                     await VulGalerijAsync();
+                    StatusText.Text = $"{opmerking}Klaar - seed {status.Seed}.";
                     break;
                 }
 
                 if (status.IsMislukt)
                 {
-                    StatusText.Text = $"Mislukt: {status.Foutmelding}";
+                    StatusText.Text = opmerking + status.Eindmelding;
                     break;
                 }
 
@@ -224,10 +253,12 @@ public partial class BeeldNaarVideo : UserControl
         }
         catch (Exception fout)
         {
-            StatusText.Text = $"Kon de beeldservice niet bereiken: {fout.Message}";
+            StatusText.Text = ImageServiceClient.Foutmelding(fout);
         }
         finally
         {
+            _lopendeTaak = null;
+            StopButton.IsEnabled = false;
             MaakButton.IsEnabled = true;
             CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
@@ -259,9 +290,16 @@ public partial class BeeldNaarVideo : UserControl
         _galerijVullen = true;
         try
         {
-            var lijst = await _service.ListJobsAsync("video");
+            var lijst = (await _service.ListJobsAsync("video")).Where(t => t.BronBeeld is not null && t.Bestand is not null && File.Exists(t.Bestand)).ToList();
+            var handtekening = GalerijPrullenbak.Handtekening(lijst);
+            if (handtekening == _galerijHandtekening)
+            {
+                return;
+            }
+
+            _galerijHandtekening = handtekening;
             Galerij.Items.Clear();
-            foreach (var taak in lijst.Where(t => t.BronBeeld is not null && t.Bestand is not null && File.Exists(t.Bestand)))
+            foreach (var taak in lijst)
             {
                 var tekst = taak.Prompt.Length > 40 ? taak.Prompt[..40] + "…" : taak.Prompt;
                 Galerij.Items.Add(new ListBoxItem
@@ -273,9 +311,9 @@ public partial class BeeldNaarVideo : UserControl
                 });
             }
         }
-        catch (Exception)
+        catch (Exception fout)
         {
-            // Service (nog) niet bereikbaar: geen galerij, geen ruzie.
+            StatusText.Text = $"De galerij kon niet geladen worden. {ImageServiceClient.Foutmelding(fout)}";
         }
         finally
         {
@@ -334,8 +372,7 @@ public partial class BeeldNaarVideo : UserControl
         var dialoog = new SaveFileDialog { Filter = "MP4-video (*.mp4)|*.mp4", FileName = "imagefunn.mp4" };
         if (dialoog.ShowDialog() == true)
         {
-            File.Copy(_huidigeVideo, dialoog.FileName, overwrite: true);
-            StatusText.Text = $"Opgeslagen: {dialoog.FileName}";
+            StatusText.Text = GalerijPrullenbak.BewaarKopie(_huidigeVideo, dialoog.FileName);
         }
     }
 }

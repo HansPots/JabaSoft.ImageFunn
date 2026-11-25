@@ -36,7 +36,7 @@
                        Foreground="{DynamicResource Text01Brush}" />
             <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextMutedBrush}" FontSize="{DynamicResource FontSizeSmall}"
-                       Text="Geldt vanaf de volgende start van de beeldservice. Die stopt zichzelf na de ingestelde tijd zonder opdracht en start bij de volgende opdracht vanzelf weer." />
+                       Text="Het standaard beeldmodel staat voorgeselecteerd op Tekst naar beeld en Film maken; daar kun je per keer een ander kiezen. De stoptijd geldt vanaf de volgende start van de beeldservice. Die stopt zichzelf na de ingestelde tijd zonder opdracht en start bij de volgende opdracht vanzelf weer." />
 
             <TextBlock Text="Standaard beeldmodel" Margin="0,14,0,4"
                        Foreground="{DynamicResource Text01Brush}" FontSize="{DynamicResource FontSizeSmall}" />

@@ -37,6 +37,18 @@ public partial class TekstNaarBeeld : UserControl
 
     private bool _galerijVullen;
 
+    /// <summary>Welke opdrachten de galerij nu toont; is dat niet veranderd, dan blijft hij staan zoals hij is.</summary>
+    private string? _galerijHandtekening;
+
+    /// <summary>De al uitgepakte miniaturen, per bestand: uitpakken kost tijd en is per beeld maar één keer nodig.</summary>
+    private readonly Dictionary<string, BitmapImage> _miniaturen = [];
+
+    /// <summary>De opdracht die nu loopt, om te kunnen stoppen.</summary>
+    private string? _lopendeTaak;
+
+    /// <summary>De voorkeur uit Instellingen die al is toegepast: een andere keuze op dit scherm blijft daarna staan.</summary>
+    private string? _modelVoorkeur;
+
     /// <summary>Gaat af als de gebruiker het gemaakte beeld wil laten beschrijven; het argument is het bestandspad.</summary>
     public event EventHandler<string>? BeeldDoorgeven;
 
@@ -48,6 +60,7 @@ public partial class TekstNaarBeeld : UserControl
     public TekstNaarBeeld(IAiBrokerClient broker)
     {
         InitializeComponent();
+        _service.Opstartmelding = new Progress<string>(tekst => StatusText.Text = tekst);
 
         // "Automatisch vertalen en verbeteren": standaard uit, en de keuze wordt
         // onthouden voor de volgende keer (zie Layout.Preferences.Verbeteren).
@@ -55,7 +68,45 @@ public partial class TekstNaarBeeld : UserControl
         VerbeterBox.Checked += (_, _) => Layout.Preferences.BewaarVerbeteren("tekstnaarbeeld", true);
         VerbeterBox.Unchecked += (_, _) => Layout.Preferences.BewaarVerbeteren("tekstnaarbeeld", false);
         _verbeteraar = new Promptverbeteraar(broker);
-        Loaded += async (_, _) => await VulGalerijAsync();
+        Loaded += async (_, _) =>
+        {
+            PasModelVoorkeurToe();
+            await VulGalerijAsync();
+        };
+    }
+
+    /// <summary>Kiest het standaard beeldmodel uit Instellingen, de eerste keer en als het daar veranderd is.</summary>
+    private void PasModelVoorkeurToe()
+    {
+        var voorkeur = Layout.Preferences.Beeldmodel;
+        if (voorkeur == _modelVoorkeur)
+        {
+            return;
+        }
+
+        _modelVoorkeur = voorkeur;
+        if (ModelKeuze.Items.OfType<ComboBoxItem>().FirstOrDefault(item => (string)item.Tag == voorkeur) is { } gekozen)
+        {
+            ModelKeuze.SelectedItem = gekozen;
+        }
+    }
+
+    private async void StopButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lopendeTaak is null)
+        {
+            return;
+        }
+
+        StopButton.IsEnabled = false;
+        try
+        {
+            await _service.StopJobAsync(_lopendeTaak);
+        }
+        catch (Exception fout)
+        {
+            StatusText.Text = $"Stoppen mislukt: {ImageServiceClient.Foutmelding(fout)}";
+        }
     }
 
     /// <summary>Zet een prompt in het invoervak - gebruikt door "Maak er een beeld van" op het andere scherm.</summary>
@@ -107,6 +158,7 @@ public partial class TekstNaarBeeld : UserControl
             // Het beeldmodel leest alleen Engels: eerst laten omschrijven door het chatmodel.
             // Lukt dat niet, dan gaat de originele tekst gewoon mee.
             var beeldPrompt = prompt;
+            string? opmerking = null;
             if (!clean && VerbeterBox.IsChecked == true)
             {
                 StatusText.Text = "Prompt vertalen en verbeteren…";
@@ -118,7 +170,8 @@ public partial class TekstNaarBeeld : UserControl
                 }
                 else
                 {
-                    StatusText.Text = $"Prompt verbeteren mislukt ({fout}) - de originele tekst wordt gebruikt.";
+                    opmerking = $"Prompt verbeteren mislukt ({fout}), de originele tekst is gebruikt. ";
+                    StatusText.Text = opmerking;
                 }
             }
 
@@ -136,24 +189,26 @@ public partial class TekstNaarBeeld : UserControl
                 Hoogte = int.Parse(formaat[1]),
                 Seed = seed,
             });
+            _lopendeTaak = jobId;
+            StopButton.IsEnabled = true;
 
             while (true)
             {
                 var status = await _service.GetStatusAsync(jobId);
-                StatusText.Text = status.Stap;
+                StatusText.Text = opmerking + status.Stap;
                 Voortgang.Value = status.Voortgang;
 
                 if (status.IsKlaar && status.Bestand is { } bestand)
                 {
                     Toon(bestand, beeldPrompt);
-                    StatusText.Text = $"Klaar - seed {status.Seed}. Prompt: {beeldPrompt}";
                     await VulGalerijAsync();
+                    StatusText.Text = $"{opmerking}Klaar - seed {status.Seed}. Prompt: {beeldPrompt}";
                     break;
                 }
 
                 if (status.IsMislukt)
                 {
-                    StatusText.Text = $"Mislukt: {status.Foutmelding}";
+                    StatusText.Text = opmerking + status.Eindmelding;
                     break;
                 }
 
@@ -162,12 +217,12 @@ public partial class TekstNaarBeeld : UserControl
         }
         catch (Exception fout)
         {
-            // Meestal: de beeldservice is niet bereikbaar (nog aan het opstarten,
-            // of de Python-omgeving staat niet klaar - zie ImageServiceLauncher).
-            StatusText.Text = $"Kon de beeldservice niet bereiken: {fout.Message}";
+            StatusText.Text = ImageServiceClient.Foutmelding(fout);
         }
         finally
         {
+            _lopendeTaak = null;
+            StopButton.IsEnabled = false;
             GenereerButton.IsEnabled = true;
             CleanButton.IsEnabled = true;
             Voortgang.Visibility = Visibility.Collapsed;
@@ -224,22 +279,36 @@ public partial class TekstNaarBeeld : UserControl
         _galerijVullen = true;
         try
         {
-            var lijst = await _service.ListJobsAsync();
-            Galerij.Items.Clear();
-            foreach (var taak in lijst.Where(t => t.Bestand is not null && File.Exists(t.Bestand)))
+            var lijst = (await _service.ListJobsAsync()).Where(t => t.Bestand is not null && File.Exists(t.Bestand)).ToList();
+            var handtekening = GalerijPrullenbak.Handtekening(lijst);
+            if (handtekening == _galerijHandtekening)
             {
-                var miniatuur = Laad(taak.Bestand!, 200);
-                if (miniatuur is null)
-                {
-                    continue;
-                }
+                return;
+            }
 
-                Galerij.Items.Add(MaakGalerijItem(new GalerijBeeld(taak.JobId, taak.Bestand!, taak.Prompt), miniatuur));
+            // Uitpakken buiten de schermdraad, anders staat het scherm zolang stil.
+            var nieuw = lijst.Select(t => t.Bestand!).Where(pad => !_miniaturen.ContainsKey(pad)).ToList();
+            foreach (var (pad, beeld) in await Task.Run(() => nieuw.Select(pad => (pad, Laad(pad, 200))).ToList()))
+            {
+                if (beeld is not null)
+                {
+                    _miniaturen[pad] = beeld;
+                }
+            }
+
+            _galerijHandtekening = handtekening;
+            Galerij.Items.Clear();
+            foreach (var taak in lijst)
+            {
+                if (_miniaturen.TryGetValue(taak.Bestand!, out var miniatuur))
+                {
+                    Galerij.Items.Add(MaakGalerijItem(new GalerijBeeld(taak.JobId, taak.Bestand!, taak.Prompt), miniatuur));
+                }
             }
         }
-        catch (Exception)
+        catch (Exception fout)
         {
-            // Service (nog) niet bereikbaar: geen galerij, geen ruzie.
+            StatusText.Text = $"De galerij kon niet geladen worden. {ImageServiceClient.Foutmelding(fout)}";
         }
         finally
         {
@@ -361,8 +430,7 @@ public partial class TekstNaarBeeld : UserControl
         var dialoog = new SaveFileDialog { Filter = "PNG-afbeelding (*.png)|*.png", FileName = "imagefunn.png" };
         if (dialoog.ShowDialog() == true)
         {
-            File.Copy(_huidigBestand, dialoog.FileName, overwrite: true);
-            StatusText.Text = $"Opgeslagen: {dialoog.FileName}";
+            StatusText.Text = GalerijPrullenbak.BewaarKopie(_huidigBestand, dialoog.FileName);
         }
     }
 

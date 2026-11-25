@@ -6,10 +6,10 @@ als AI Studio en Tab Studio. Twee kanten:
 - **Beeld naar tekst** - een afbeelding laten beschrijven, uitlezen (OCR) of omzetten naar
   een prompt. Loopt via de AI-broker met het in Jabasoft ingestelde beeldmodel (Ollama/LM Studio).
 - **Tekst naar beeld** - een beeld genereren uit een omschrijving. Loopt via de lokale
-  Python-service in `ImageFunn.Image`. Standaard **JuggernautXL Ragnarok** (zeer fotorealistisch, een
-  SDXL-model). Het GGUF-bestand wordt gevonden in de modelmap van LM Studio en de eerste keer omgezet
-  (±1 minuut, daarna 5 GB gecachet in `ImageFunn.Image/modellen`). Ander model? Zet `IMAGEFUNN_MODEL`
-  op `sdxl` (het gewone SDXL-basismodel) of `flux`.
+  Python-service in `ImageFunn.Image`. Standaard **RealVisXL V5.0** (fotorealistisch, een SDXL-model); het
+  model is per opdracht te kiezen, en de standaard in Jabasoft > Instellingen. **JuggernautXL Ragnarok**
+  wordt gevonden in de modelmap van LM Studio en de eerste keer omgezet (±1 minuut, daarna 5 GB gecachet in
+  `ImageFunn.Image/modellen`). Verder: `sdxl` (het gewone SDXL-basismodel) en `flux` (FLUX.1-schnell).
 
 ## Starten
 
@@ -32,5 +32,5 @@ py -3.11 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-De eerste generatie downloadt het model (±33 GB, naar de HuggingFace-cache). Liever SDXL
-(kleiner, ±7 GB)? Zet de omgevingsvariabele `IMAGEFUNN_MODEL=sdxl`.
+De eerste generatie met een model downloadt dat model naar de HuggingFace-cache. De uitvoer van de
+service staat in `ImageFunn.Image/service.log`.

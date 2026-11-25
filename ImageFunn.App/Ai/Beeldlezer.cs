@@ -69,8 +69,13 @@ public sealed class Beeldlezer(IAiBrokerClient broker)
         // Het beeldmodel als dat ingesteld is; anders het gewone chatmodel (kan het geen
         // beelden lezen, dan meldt de server dat zelf).
         var model = !string.IsNullOrWhiteSpace(actief.BeeldModel) ? actief.BeeldModel : actief.ChatModel;
-        return string.IsNullOrWhiteSpace(model)
-            ? (null, "Er is geen beeldmodel ingesteld. Kies er een in Jabasoft > Instellingen.")
+        if (string.IsNullOrWhiteSpace(model))
+        {
+            return (null, "Er is geen beeldmodel ingesteld. Kies er een in Jabasoft > Instellingen.");
+        }
+
+        return model.Contains("embed", StringComparison.OrdinalIgnoreCase)
+            ? (null, $"{model} is een embeddingmodel en kan geen afbeeldingen lezen. Kies een beeldmodel in Jabasoft > Instellingen.")
             : (model, null);
     }
 

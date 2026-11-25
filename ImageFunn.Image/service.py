@@ -41,6 +41,9 @@ from pydantic import BaseModel, Field
 
 import videomodellen
 
+# Moet vóór de eerste torch-import staan: voorkomt dat het GPU-geheugen versnippert (FLUX liep daar op 12 GB tegenaan).
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
@@ -74,7 +77,7 @@ JUGGERNAUT_CACHE = Path(__file__).parent / "modellen" / "juggernaut_unet_fp16.sa
 
 # De versie van deze code: het tijdstip waarop service.py voor het laatst gewijzigd is. ImageFunn.App vergelijkt dit
 # met het bestand op schijf en start de service opnieuw als er een nieuwere versie ligt dan die draait.
-VERSIE = int(Path(__file__).stat().st_mtime)
+VERSIE = int(max(Path(__file__).stat().st_mtime, Path(videomodellen.__file__).stat().st_mtime))
 
 Status = Literal["wachtend", "bezig", "klaar", "mislukt"]
 
@@ -122,9 +125,9 @@ class Opdracht(BaseModel):
     frames: int = Field(97, ge=9, le=161)
     # Welk videomodel (sleutel uit videomodellen.MODELLEN). Geldt voor soort "video" en "film".
     videomodel: str = videomodellen.STANDAARD
-    # Welk beeldmodel: "juggernaut", "realvis" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen met
-    # een SDXL-model en valt bij FLUX terug op RealVisXL; de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
-    beeldmodel: Literal["", "juggernaut", "realvis", "flux"] = ""
+    # Welk beeldmodel: "juggernaut", "realvis", "sdxl" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen
+    # met een SDXL-model en valt bij FLUX terug op RealVisXL; de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
+    beeldmodel: Literal["", "juggernaut", "realvis", "sdxl", "flux"] = ""
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
     modus: Literal["doorlopend", "sleutelbeelden"] = "sleutelbeelden"
@@ -373,10 +376,14 @@ def _laad_pijplijn(meld):
                 ),
                 torch_dtype=torch.bfloat16,
             )
+            # T5 in 4-bit (niet 8-bit): een 8-bit model kan niet terug naar de CPU, bleef dan naast het
+            # beeldnetwerk op de GPU staan en samen pasten die niet op 12 GB. 4-bit wisselt wel netjes.
             t5 = T5EncoderModel.from_pretrained(
                 repo,
                 subfolder="text_encoder_2",
-                quantization_config=TransformersBnb(load_in_8bit=True),
+                quantization_config=TransformersBnb(
+                    load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+                ),
                 torch_dtype=torch.bfloat16,
             )
             pipe = FluxPipeline.from_pretrained(
@@ -409,7 +416,9 @@ def _draai_beeld(taak: Taak) -> None:
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
 
-            def stap_klaar(_pipe, i, _t, kwargs):
+            def stap_klaar(pipe_, i, _t, kwargs):
+                if taak.stop:
+                    pipe_._interrupt = True
                 taak.voortgang = (i + 1) / stappen
                 taak.stap = f"Genereren: stap {i + 1} van {stappen}"
                 return kwargs
@@ -430,6 +439,8 @@ def _draai_beeld(taak: Taak) -> None:
 
             taak.stap = "Genereren…"
             beeld = pipe(**args).images[0]
+            if taak.stop:
+                raise _Gestopt()
 
             map_ = UITVOER / taak.job_id
             map_.mkdir(parents=True, exist_ok=True)
@@ -440,6 +451,8 @@ def _draai_beeld(taak: Taak) -> None:
             taak.stap = "Klaar"
             taak.status = "klaar"
             (map_ / "meta.json").write_text(json.dumps(taak.als_dict(), ensure_ascii=False), encoding="utf-8")
+        except _Gestopt:
+            _zet_gestopt(taak)
         except Exception as fout:  # noqa: BLE001 - alles hoort als melding bij de client te komen
             traceback.print_exc()
             taak.status = "mislukt"
@@ -556,7 +569,9 @@ def _draai_bewerk(taak: Taak) -> None:
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
 
-            def stap_klaar(_p, i, _t, kwargs):
+            def stap_klaar(pipe_, i, _t, kwargs):
+                if taak.stop:
+                    pipe_._interrupt = True
                 taak.voortgang = min(1.0, (i + 1) / totaal)
                 taak.stap = f"Bijsturen: stap {i + 1} van {totaal}"
                 return kwargs
@@ -578,6 +593,8 @@ def _draai_bewerk(taak: Taak) -> None:
 
             taak.stap = "Bijsturen…"
             beeld = pijplijn(**args).images[0]
+            if taak.stop:
+                raise _Gestopt()
 
             map_ = UITVOER / taak.job_id
             map_.mkdir(parents=True, exist_ok=True)
@@ -588,6 +605,8 @@ def _draai_bewerk(taak: Taak) -> None:
             taak.stap = "Klaar"
             taak.status = "klaar"
             (map_ / "meta.json").write_text(json.dumps(taak.als_dict(), ensure_ascii=False), encoding="utf-8")
+        except _Gestopt:
+            _zet_gestopt(taak)
         except Exception as fout:  # noqa: BLE001 - alles hoort als melding bij de client te komen
             traceback.print_exc()
             taak.status = "mislukt"
@@ -676,7 +695,9 @@ def _draai_video(taak: Taak) -> None:
             map_.mkdir(parents=True, exist_ok=True)
             voorproef_draad: list[threading.Thread] = []
 
-            def stap_klaar(_pipe, i, _t, kwargs):
+            def stap_klaar(pipe_, i, _t, kwargs):
+                if taak.stop:
+                    pipe_._interrupt = True
                 taak.voortgang = (i + 1) / stappen
                 taak.stap = f"{'Animeren' if vanaf_beeld else 'Video maken'}: stap {i + 1} van {stappen}"
                 bezig = voorproef_draad and voorproef_draad[0].is_alive()
@@ -702,6 +723,8 @@ def _draai_video(taak: Taak) -> None:
                 pipe, prompt=o.prompt, negatief=o.negatief, breedte=breedte, hoogte=hoogte, frames=frames,
                 stappen=stappen, seed=seed, bron=bron, stap_klaar=stap_klaar,
             )
+            if taak.stop:
+                raise _Gestopt()
 
             taak.stap = "Video opslaan…"
             taak.voorproef = None
@@ -715,6 +738,8 @@ def _draai_video(taak: Taak) -> None:
             taak.stap = "Klaar"
             taak.status = "klaar"
             (map_ / "meta.json").write_text(json.dumps(taak.als_dict(), ensure_ascii=False), encoding="utf-8")
+        except _Gestopt:
+            _zet_gestopt(taak)
         except Exception as fout:  # noqa: BLE001 - alles hoort als melding bij de client te komen
             traceback.print_exc()
             taak.status = "mislukt"
@@ -732,6 +757,12 @@ def _naar_24fps(beelden: list, fps: int) -> list:
 
 class _Gestopt(Exception):
     pass
+
+
+def _zet_gestopt(taak: Taak) -> None:
+    taak.status = "mislukt"
+    taak.foutmelding = "Gestopt."
+    taak.stap = "Gestopt"
 
 
 def _ip_args(
@@ -1231,6 +1262,8 @@ def _lees_bestaande() -> None:
                     soort=d.get("soort", "beeld"),
                     bron_beeld=d.get("bron_beeld"),
                     frames=d.get("frames", 97),
+                    videomodel=d.get("videomodel", videomodellen.STANDAARD),
+                    beeldmodel=d.get("beeldmodel", ""),
                     scenes=[Scene(**sc) for sc in d.get("scenes", [])],
                     modus=d.get("modus", "sleutelbeelden"),
                     overgang=d.get("overgang", "zacht"),
@@ -1250,10 +1283,10 @@ _lees_bestaande()
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    # Alleen als PyTorch al geladen is: de eerste keer laden kost meer dan een seconde, te lang voor een statuscontrole.
+    torch = sys.modules.get("torch")
     try:
-        import torch
-
-        cuda = torch.cuda.is_available()
+        cuda = torch.cuda.is_available() if torch else None
         gpu = torch.cuda.get_device_name(0) if cuda else None
     except Exception:  # noqa: BLE001
         cuda, gpu = False, None

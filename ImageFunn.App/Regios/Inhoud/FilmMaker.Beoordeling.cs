@@ -525,7 +525,7 @@ public partial class FilmMaker
         }
         catch (Exception fout)
         {
-            StatusText.Text = $"Kon de beeldservice niet bereiken: {fout.Message}";
+            StatusText.Text = ImageServiceClient.Foutmelding(fout);
         }
         finally
         {

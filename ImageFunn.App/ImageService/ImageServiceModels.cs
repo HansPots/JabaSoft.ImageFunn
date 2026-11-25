@@ -235,6 +235,12 @@ public sealed class BeeldJobStatus
     [JsonPropertyName("bron_beeld")]
     public string? BronBeeld { get; set; }
 
+    [JsonPropertyName("videomodel")]
+    public string Videomodel { get; set; } = string.Empty;
+
+    [JsonPropertyName("beeldmodel")]
+    public string Beeldmodel { get; set; } = string.Empty;
+
     [JsonPropertyName("scenes")]
     public List<FilmScene> Scenes { get; set; } = [];
 
@@ -267,6 +273,9 @@ public sealed class BeeldJobStatus
     public bool IsKlaar => Status == "klaar";
 
     public bool IsMislukt => Status == "mislukt";
+
+    /// <summary>Wat er op het scherm komt als de taak niet gelukt is; zelf stoppen is geen fout.</summary>
+    public string Eindmelding => Foutmelding == "Gestopt." ? "Gestopt." : $"Mislukt: {Foutmelding}";
 }
 
 /// <summary>Antwoord van /health.</summary>
@@ -281,8 +290,17 @@ public sealed class BeeldServiceGezondheid
     [JsonPropertyName("model_geladen")]
     public bool ModelGeladen { get; set; }
 
+    /// <summary>Welk beeldmodel er nu geladen is.</summary>
+    [JsonPropertyName("beeld_model")]
+    public string BeeldModel { get; set; } = string.Empty;
+
+    /// <summary>Welk videomodel er nu geladen is.</summary>
+    [JsonPropertyName("video_model")]
+    public string VideoModel { get; set; } = string.Empty;
+
+    /// <summary>Null zolang PyTorch nog niet geladen is: dan is het nog niet bekend.</summary>
     [JsonPropertyName("cuda")]
-    public bool Cuda { get; set; }
+    public bool? Cuda { get; set; }
 
     [JsonPropertyName("gpu")]
     public string? Gpu { get; set; }
