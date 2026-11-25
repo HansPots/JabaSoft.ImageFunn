@@ -14,7 +14,7 @@ meta.json); de paden komen terug in de JSON, want client en service draaien
 op dezelfde machine. Bij het opstarten worden de meta.json's teruggelezen,
 zodat de galerij een herstart van de service overleeft.
 
-Standaard RealVisXL; IMAGEFUNN_MODEL kiest een andere standaard ("juggernaut" of "flux"). Een opdracht kan
+Standaard RealVisXL; IMAGEFUNN_MODEL kiest een andere standaard ("juggernaut", "flux", "zimage" of "fluxdev"). Een opdracht kan
 zelf een beeldmodel vragen (Opdracht.beeldmodel), ook FLUX.1-schnell: dan wisselt de service van model.
 
 Starten (handmatig - ImageFunn.App doet dit zelf bij het opstarten):
@@ -39,6 +39,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+import service_modellen
 import videomodellen
 
 # Moet vóór de eerste torch-import staan: voorkomt dat het GPU-geheugen versnippert (FLUX liep daar op 12 GB tegenaan).
@@ -55,8 +56,9 @@ UITVOER = Path(os.environ.get("IMAGEFUNN_UITVOER") or (Path(__file__).parent / "
 UITVOER.mkdir(parents=True, exist_ok=True)
 
 # "realvis" (standaard): RealVisXL V5.0, een fotorealistische SDXL-variant. "juggernaut": JuggernautXL Ragnarok, ook fotorealistisch.
-# "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
-BEELDMODELLEN = ("realvis", "juggernaut", "flux")
+# "flux": FLUX.1-schnell (vraagt een Hugging Face-login). "zimage": Z-Image Turbo en "fluxdev": FLUX.1-dev, allebei als
+# GGUF (zie service_modellen.py).
+BEELDMODELLEN = ("realvis", "juggernaut", "flux", "zimage", "fluxdev")
 
 
 def _beeldmodel(naam: str) -> str:
@@ -77,6 +79,14 @@ def _guidance(model: str) -> float:
     """Guidance: Juggernaut en RealVisXL werken het best rond 5."""
     return 5.0
 
+
+def _model_args(model: str) -> tuple[int, int, dict[str, Any]]:
+    """(standaard aantal stappen, rekenblok in pixels, extra argumenten) voor een model dat geen SDXL is."""
+    if model == "flux":
+        return 4, 16, dict(guidance_scale=0.0, max_sequence_length=256)
+    inst = service_modellen.INSTELLINGEN[model]
+    return inst["stappen"], inst["blok"], dict(guidance_scale=inst["guidance"])
+
 # Na zoveel seconden zonder opdracht laat de service zijn modellen los en STOPT hij zichzelf. Alleen het videokaartgeheugen
 # laat zich in het proces vrijgeven; het werkgeheugen (RAM, 7 tot 13 GB) houden PyTorch en de CUDA-stuurprogramma's vast
 # tot het proces eindigt (gemeten: geen enkel Python-object leeft nog, het RAM blijft toch staan). ImageFunn start de
@@ -88,7 +98,7 @@ JUGGERNAUT_CACHE = Path(__file__).parent / "modellen" / "juggernaut_unet_fp16.sa
 
 # De versie van deze code: het tijdstip waarop service.py voor het laatst gewijzigd is. ImageFunn.App vergelijkt dit
 # met het bestand op schijf en start de service opnieuw als er een nieuwere versie ligt dan die draait.
-VERSIE = int(max(Path(__file__).stat().st_mtime, Path(videomodellen.__file__).stat().st_mtime))
+VERSIE = int(max(Path(m).stat().st_mtime for m in (__file__, videomodellen.__file__, service_modellen.__file__)))
 
 Status = Literal["wachtend", "bezig", "klaar", "mislukt"]
 
@@ -136,8 +146,8 @@ class Opdracht(BaseModel):
     frames: int = Field(97, ge=9, le=161)
     # Welk videomodel (sleutel uit videomodellen.MODELLEN). Geldt voor soort "video" en "film".
     videomodel: str = videomodellen.STANDAARD
-    # Welk beeldmodel: "juggernaut", "realvis" of "flux"; leeg = de standaard van de service. Bijsturen kan alleen
-    # met een SDXL-model en valt bij FLUX terug op RealVisXL; de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
+    # Welk beeldmodel: "juggernaut", "realvis", "flux", "zimage" of "fluxdev"; leeg = de standaard van de service.
+    # Bijsturen kan niet met FLUX.1-schnell (valt terug op RealVisXL); de cast-gelijkenis (IP-Adapter) werkt alleen met SDXL.
     beeldmodel: str = ""
     # Alleen bij soort "film":
     scenes: list[Scene] = Field(default_factory=list)
@@ -385,6 +395,8 @@ def _laad_pijplijn(meld):
                 pipe.scheduler.config, use_karras_sigmas=True, algorithm_type="sde-dpmsolver++"
             )
             pipe.enable_model_cpu_offload()
+        elif gevraagd in service_modellen.LADERS:
+            pipe = service_modellen.LADERS[gevraagd](meld, videomodellen.revisie)
         else:
             from diffusers import BitsAndBytesConfig as DiffusersBnb
             from diffusers import FluxPipeline, FluxTransformer2DModel
@@ -437,9 +449,9 @@ def _draai_beeld(taak: Taak) -> None:
             pipe = _laad_pijplijn(meld)
             o = taak.opdracht
             flux = _pipe_model not in SDXL_MODELLEN
-            stappen = o.stappen or (4 if flux else 30)
-            # FLUX rekent in blokken van 16 pixels, SDXL van 8.
-            blok = 16 if flux else 8
+            # FLUX en Z-Image rekenen in blokken van 16 pixels, SDXL van 8.
+            standaard, blok, extra = _model_args(_pipe_model) if flux else (30, 8, {})
+            stappen = o.stappen or standaard
             breedte, hoogte = o.breedte // blok * blok, o.hoogte // blok * blok
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
@@ -460,7 +472,7 @@ def _draai_beeld(taak: Taak) -> None:
                 callback_on_step_end=stap_klaar,
             )
             if flux:
-                args.update(guidance_scale=0.0, max_sequence_length=256)
+                args.update(extra)
             else:
                 args.update(guidance_scale=_guidance(_pipe_model), negative_prompt=o.negatief or None)
                 args.update(_ip_args(pipe))
@@ -566,18 +578,21 @@ def _draai_bewerk(taak: Taak) -> None:
             from PIL import Image
 
             o = taak.opdracht
-            # Bijsturen bestaat alleen voor SDXL-modellen; is FLUX gevraagd (of de standaard), dan RealVisXL.
-            if (_vraag_model or MODEL_KEUZE) not in SDXL_MODELLEN:
+            # Bijsturen kan met SDXL, Z-Image en FLUX.1-dev; is FLUX.1-schnell gevraagd (of de standaard), dan RealVisXL.
+            if (_vraag_model or MODEL_KEUZE) == "flux":
                 _vraag_model = "realvis"
             if not _bestaat_pad(o.bron_beeld):
                 raise RuntimeError("Het beeld om bij te sturen is niet gevonden.")
 
             basis = _laad_pijplijn(lambda t: setattr(taak, "stap", t))
 
-            # Het formaat blijft zoals het was (veelvoud van 8), met een bovengrens van ongeveer 1,3 megapixel.
+            sdxl = _pipe_model in SDXL_MODELLEN
+            standaard, blok, extra = (30, 8, {}) if sdxl else _model_args(_pipe_model)
+
+            # Het formaat blijft zoals het was (veelvoud van het rekenblok), met een bovengrens van ongeveer 1,3 megapixel.
             bron = Image.open(o.bron_beeld).convert("RGB")
             k = min(1.0, (1_300_000 / (bron.width * bron.height)) ** 0.5)
-            breedte, hoogte = max(64, round(bron.width * k / 8) * 8), max(64, round(bron.height * k / 8) * 8)
+            breedte, hoogte = max(64, round(bron.width * k / blok) * blok), max(64, round(bron.height * k / blok) * blok)
             bron = bron.resize((breedte, hoogte), Image.LANCZOS)
 
             masker = None
@@ -587,12 +602,15 @@ def _draai_bewerk(taak: Taak) -> None:
 
             soort = "inpaint" if masker is not None else "i2i"
             if soort not in _bewerk_pijplijnen:
-                klasse = StableDiffusionXLInpaintPipeline if masker is not None else StableDiffusionXLImg2ImgPipeline
-                _bewerk_pijplijnen[soort] = klasse.from_pipe(basis, dtype=torch.float16)
+                if sdxl:
+                    klasse = StableDiffusionXLInpaintPipeline if masker is not None else StableDiffusionXLImg2ImgPipeline
+                    _bewerk_pijplijnen[soort] = klasse.from_pipe(basis, dtype=torch.float16)
+                else:
+                    _bewerk_pijplijnen[soort] = service_modellen.bewerk_pijplijn(_pipe_model, basis, masker is not None)
                 _bewerk_pijplijnen[soort].set_progress_bar_config(disable=True)
             pijplijn = _bewerk_pijplijnen[soort]
 
-            stappen = o.stappen or 30
+            stappen = o.stappen or standaard
             totaal = max(1, int(stappen * o.sterkte))
             seed = o.seed if o.seed is not None else random.randint(0, 2**31 - 1)
             taak.seed = seed
@@ -606,18 +624,22 @@ def _draai_bewerk(taak: Taak) -> None:
 
             args: dict[str, Any] = dict(
                 prompt=o.prompt,
-                negative_prompt=o.negatief or None,
                 image=bron,
                 strength=o.sterkte,
                 num_inference_steps=stappen,
-                guidance_scale=_guidance(_pipe_model),
                 generator=torch.Generator("cpu").manual_seed(seed),
                 callback_on_step_end=stap_klaar,
             )
-            args.update(_ip_args(pijplijn))
+            if sdxl:
+                args.update(negative_prompt=o.negatief or None, guidance_scale=_guidance(_pipe_model))
+                args.update(_ip_args(pijplijn))
+            else:
+                args.update(extra, width=breedte, height=hoogte)
             if masker is not None:
+                args.update(mask_image=masker, width=breedte, height=hoogte)
                 # padding_mask_crop: alleen rond het gebied wordt op volle resolutie gewerkt, wat de details beter maakt.
-                args.update(mask_image=masker, padding_mask_crop=32, width=breedte, height=hoogte)
+                if _pipe_model != "zimage":
+                    args.update(padding_mask_crop=32)
 
             taak.stap = "Bijsturen…"
             beeld = pijplijn(**args).images[0]
@@ -918,14 +940,14 @@ def _render_sleutelbeeld(
 
     pipe = _laad_pijplijn(meld)
     flux = _pipe_model not in SDXL_MODELLEN
-    blok = 16 if flux else 8
+    standaard, blok, extra = _model_args(_pipe_model) if flux else (30, 8, {})
     k = (1024 * 1024 / (breedte * hoogte)) ** 0.5
     b, h = max(blok, round(breedte * k / blok) * blok), max(blok, round(hoogte * k / blok) * blok)
     args: dict[str, Any] = dict(
         prompt=prompt,
         width=b,
         height=h,
-        num_inference_steps=4 if flux else 30,
+        num_inference_steps=standaard,
         generator=torch.Generator("cpu").manual_seed(seed),
     )
     if bij_stap is not None:
@@ -935,7 +957,7 @@ def _render_sleutelbeeld(
 
         args["callback_on_step_end"] = na_stap
     if flux:
-        args.update(guidance_scale=0.0, max_sequence_length=256)
+        args.update(extra)
     else:
         args.update(guidance_scale=_guidance(_pipe_model), negative_prompt=negatief or "blurry, low quality, deformed, text, watermark")
         args.update(_ip_args(pipe, speler, plek, speler_sterkte, plek_sterkte, voorwerp, voorwerp_sterkte))
