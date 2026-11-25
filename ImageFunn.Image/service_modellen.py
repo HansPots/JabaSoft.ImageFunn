@@ -55,7 +55,20 @@ def laad_zimage(meld: Callable[[str], None], revisie: Callable[[str], str | None
         config=ZIMAGE_REPO, subfolder="transformer", revision=vast,
         torch_dtype=torch.bfloat16,
     )
-    pipe = ZImagePipeline.from_pretrained(ZIMAGE_REPO, transformer=transformer, torch_dtype=torch.bfloat16, revision=vast)
+    # Tekstencoder (Qwen3-4B) in 4-bit: 8 GB werd ±2,5 GB, dus de service houdt ±11 i.p.v. ±16 GB werkgeheugen vast.
+    # Gemeten: zelfde snelheid (1024² 15 s, 1536² 35 s) en geen zichtbaar verschil. Het beeldnetwerk vast op de GPU zetten
+    # scheelt nog meer RAM (±5 GB), maar maakt 1536² bijna twee keer zo traag (61 s): niet gedaan.
+    from transformers import AutoModel
+    from transformers import BitsAndBytesConfig as TransformersBnb
+
+    tekst = AutoModel.from_pretrained(
+        ZIMAGE_REPO, subfolder="text_encoder", revision=vast, torch_dtype=torch.bfloat16,
+        quantization_config=TransformersBnb(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16),
+        device_map={"": "cpu"},
+    )
+    pipe = ZImagePipeline.from_pretrained(
+        ZIMAGE_REPO, transformer=transformer, text_encoder=tekst, torch_dtype=torch.bfloat16, revision=vast
+    )
     pipe.enable_model_cpu_offload()
     return pipe
 

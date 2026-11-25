@@ -40,6 +40,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 import service_modellen
+import vergroten
 import videomodellen
 
 # Moet vóór de eerste torch-import staan: voorkomt dat het GPU-geheugen versnippert (FLUX liep daar op 12 GB tegenaan).
@@ -98,7 +99,7 @@ JUGGERNAUT_CACHE = Path(__file__).parent / "modellen" / "juggernaut_unet_fp16.sa
 
 # De versie van deze code: het tijdstip waarop service.py voor het laatst gewijzigd is. ImageFunn.App vergelijkt dit
 # met het bestand op schijf en start de service opnieuw als er een nieuwere versie ligt dan die draait.
-VERSIE = int(max(Path(m).stat().st_mtime for m in (__file__, videomodellen.__file__, service_modellen.__file__)))
+VERSIE = int(max(Path(m).stat().st_mtime for m in (__file__, videomodellen.__file__, service_modellen.__file__, vergroten.__file__)))
 
 Status = Literal["wachtend", "bezig", "klaar", "mislukt"]
 
@@ -166,6 +167,8 @@ class Opdracht(BaseModel):
     # zonder masker verandert het hele beeld, zoveel als sterkte toelaat.
     masker: str | None = None
     sterkte: float = Field(0.5, ge=0.05, le=1.0)
+    # Soort "beeld" met bron_beeld en vergroot: het beeld 2× vergroten (Real-ESRGAN, zie vergroten.py) i.p.v. bijsturen.
+    vergroot: bool = False
 
     # Oude verhalen en instellingen kunnen een vervallen model noemen (SDXL-basis, SANA, Kandinsky): dan de standaard.
     @field_validator("beeldmodel")
@@ -705,6 +708,42 @@ def _maak_voorproef(pipe, latents, taak: Taak, map_: Path) -> None:
             (map_ / f"voorproef_{nr - 2}.jpg").unlink(missing_ok=True)
     except Exception:  # noqa: BLE001 - een voorproefje is een extraatje
         traceback.print_exc()
+
+
+def _draai_vergroot(taak: Taak) -> None:
+    """Een bestaand beeld 2× vergroten met Real-ESRGAN. Klein netwerk (±70 MB): past naast een geladen beeldmodel."""
+    with _wachtrij_slot:
+        taak.status = "bezig"
+        try:
+            from PIL import Image
+
+            o = taak.opdracht
+            if not _bestaat_pad(o.bron_beeld):
+                raise RuntimeError("Het beeld om te vergroten is niet gevonden.")
+            taak.stap = "Vergroten…"
+
+            def voortgang(f: float) -> None:
+                taak.voortgang = f
+                taak.stap = f"Vergroten: {round(f * 100)}%"
+
+            beeld = vergroten.vergroot(Image.open(o.bron_beeld), videomodellen.revisie, voortgang=voortgang)
+            # Het formaat van de uitkomst, voor de beeldinfo in de app.
+            o.breedte, o.hoogte = beeld.width, beeld.height
+
+            map_ = UITVOER / taak.job_id
+            map_.mkdir(parents=True, exist_ok=True)
+            pad = map_ / "beeld.png"
+            beeld.save(pad)
+            taak.bestand = str(pad)
+            taak.voortgang = 1.0
+            taak.stap = "Klaar"
+            taak.status = "klaar"
+            (map_ / "meta.json").write_text(json.dumps(taak.als_dict(), ensure_ascii=False), encoding="utf-8")
+        except Exception as fout:  # noqa: BLE001 - alles hoort als melding bij de client te komen
+            traceback.print_exc()
+            taak.status = "mislukt"
+            taak.foutmelding = str(fout)
+            taak.stap = "Mislukt"
 
 
 def _draai_video(taak: Taak) -> None:
@@ -1340,6 +1379,8 @@ def _draai(taak: Taak) -> None:
             _draai_film(taak)
         elif taak.opdracht.soort == "video":
             _draai_video(taak)
+        elif taak.opdracht.soort == "beeld" and taak.opdracht.bron_beeld and taak.opdracht.vergroot:
+            _draai_vergroot(taak)
         elif taak.opdracht.soort == "beeld" and taak.opdracht.bron_beeld:
             _draai_bewerk(taak)
         else:
@@ -1351,13 +1392,14 @@ def _draai(taak: Taak) -> None:
 
 def _ontlaad_alles() -> bool:
     """Laat het beeldmodel en het videomodel los en geeft GPU en RAM terug. True als er iets geladen was."""
-    if _pipe is None and _video_pipe is None:
+    if _pipe is None and _video_pipe is None and vergroten._net is None:
         return False
 
     import gc
 
     _geef_video_vrij()
     _geef_beeld_vrij()
+    vergroten._net = None
     gc.collect()
     try:
         import torch
