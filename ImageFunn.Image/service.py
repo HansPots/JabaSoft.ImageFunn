@@ -89,10 +89,10 @@ def _model_args(model: str) -> tuple[int, int, dict[str, Any]]:
     return inst["stappen"], inst["blok"], dict(guidance_scale=inst["guidance"])
 
 # Na zoveel seconden zonder opdracht laat de service zijn modellen los en STOPT hij zichzelf. Alleen het videokaartgeheugen
-# laat zich in het proces vrijgeven; het werkgeheugen (RAM, 7 tot 13 GB) houden PyTorch en de CUDA-stuurprogramma's vast
+# laat zich in het proces vrijgeven; het werkgeheugen (RAM, 11 tot 17 GB) houden PyTorch en de CUDA-stuurprogramma's vast
 # tot het proces eindigt (gemeten: geen enkel Python-object leeft nog, het RAM blijft toch staan). ImageFunn start de
-# service bij de volgende opdracht vanzelf weer. 0 = nooit stoppen.
-ONTLAAD_NA = int(os.environ.get("IMAGEFUNN_ONTLAAD_NA", "300"))
+# service bij de volgende opdracht vanzelf weer. Standaard na 1 minuut (was 5). 0 = nooit stoppen.
+ONTLAAD_NA = int(os.environ.get("IMAGEFUNN_ONTLAAD_NA", "60"))
 
 # Het omgezette Juggernaut-netwerk, zodat de omzetting (±1 minuut) maar één keer nodig is.
 JUGGERNAUT_CACHE = Path(__file__).parent / "modellen" / "juggernaut_unet_fp16.safetensors"
