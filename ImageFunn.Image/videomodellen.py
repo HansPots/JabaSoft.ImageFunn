@@ -19,6 +19,25 @@ from typing import Any, Callable
 
 NEGATIEF_STANDAARD = "worst quality, inconsistent motion, blurry, jittery, distorted, static, still image"
 
+_revisies: dict[str, str | None] = {}
+
+
+def revisie(repo: str) -> str | None:
+    """
+    De versie (commit) van een Hugging Face-model die al op schijf staat, om dat model vast te zetten: zonder
+    vaste versie vraagt het laden steeds om de nieuwste, en verschijnt er online een nieuwe, dan wordt het hele model
+    opnieuw gedownload (gebeurd met FLUX: ±22 GB, terwijl de vorige versie compleet op schijf stond; op deze pc kan
+    Hugging Face zonder symbolische koppelingen niets hergebruiken). Staan er meerdere versies, dan de grootste (de
+    meest complete). None = nog niets op schijf: dan de nieuwste, en die wordt gedownload.
+    """
+    if repo not in _revisies:
+        from huggingface_hub import constants
+
+        map_ = Path(constants.HF_HUB_CACHE) / f"models--{repo.replace('/', '--')}" / "snapshots"
+        versies = [(sum(f.stat().st_size for f in v.rglob("*") if f.is_file()), v.name) for v in map_.glob("*") if v.is_dir()]
+        _revisies[repo] = max(versies)[1] if versies else None
+    return _revisies[repo]
+
 
 @dataclass(frozen=True)
 class Videomodel:
@@ -96,7 +115,7 @@ class _Tekstencoders:
 
         if self.geladen is None:
             self.geladen = tuple(
-                klasse.from_pretrained(self.repo, subfolder=naam, torch_dtype=torch.bfloat16)
+                klasse.from_pretrained(self.repo, subfolder=naam, torch_dtype=torch.bfloat16, revision=revisie(self.repo))
                 for klasse, naam in zip(self.klassen, self.namen)
             )
         return self.geladen
@@ -233,14 +252,14 @@ def _wan_transformer(meld):
     from diffusers import WanTransformer3DModel
     from huggingface_hub import snapshot_download
 
-    commit = Path(snapshot_download(WAN_ID, allow_patterns=["transformer/config.json"])).name
+    commit = Path(snapshot_download(WAN_ID, allow_patterns=["transformer/config.json"], revision=revisie(WAN_ID))).name
     merk = WAN_TRANSFORMER_CACHE / "commit.txt"
 
     if not (merk.is_file() and merk.read_text(encoding="utf-8").strip() == commit):
         meld("Videomodel Wan 2.2 voor het eerst omzetten naar 16-bits (eenmalig, een paar minuten)…")
         # Alleen de transformer, nog vóór de rest van de pijplijn geladen is: zo is er genoeg werkgeheugen voor.
         # Per deel ingelezen en meteen omgezet, dus de piek is de bfloat16-versie plus één deel van 4,7 GB.
-        transformer = WanTransformer3DModel.from_pretrained(WAN_ID, subfolder="transformer", torch_dtype=torch.bfloat16)
+        transformer = WanTransformer3DModel.from_pretrained(WAN_ID, subfolder="transformer", torch_dtype=torch.bfloat16, revision=revisie(WAN_ID))
         WAN_TRANSFORMER_CACHE.mkdir(parents=True, exist_ok=True)
         transformer.save_pretrained(str(WAN_TRANSFORMER_CACHE), safe_serialization=True)
         merk.write_text(commit, encoding="utf-8")
@@ -260,8 +279,8 @@ def _wan_pijplijn(transformer):
     # Windows leende de rest uit het werkgeheugen en dat maakte elke stap ruim een minuut (gemeten: 88 s/stap). In 8-bit
     # is het ±5 GB en past alles; het kost een heel klein beetje precisie. Normlagen en inbeddingen blijven ongemoeid.
     # Pas ná from_pretrained: dat zet meegegeven onderdelen nog om naar torch_dtype, en dat liep stuk op de 8-bit-opslag.
-    vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32)
-    pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, transformer=transformer, torch_dtype=torch.bfloat16)
+    vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32, revision=revisie(WAN_ID))
+    pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, transformer=transformer, torch_dtype=torch.bfloat16, revision=revisie(WAN_ID))
     pipe.transformer.enable_layerwise_casting(storage_dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16)
     pipe.enable_model_cpu_offload()
     _tekst_op_processor(pipe, _WAN_TEKST)
@@ -367,7 +386,7 @@ def _laad_wan_snel(meld):
     from diffusers import WanTransformer3DModel
 
     meld("Videomodel laden (Wan 2.2 snel)… (de eerste keer wordt ±10 GB gedownload)")
-    transformer = WanTransformer3DModel.from_pretrained(FASTWAN_ID, subfolder="transformer", torch_dtype=torch.bfloat16)
+    transformer = WanTransformer3DModel.from_pretrained(FASTWAN_ID, subfolder="transformer", torch_dtype=torch.bfloat16, revision=revisie(FASTWAN_ID))
     pipe = _wan_pijplijn(transformer)
     pipe.scheduler = _dmd_scheduler()
     return pipe

@@ -268,7 +268,7 @@ def _laad_juggernaut_unet(meld):
     from diffusers import UNet2DConditionModel
 
     # Juggernaut heeft dezelfde opbouw als elk SDXL-netwerk; de beschrijving daarvan komt uit RealVisXL (al aanwezig).
-    config = UNet2DConditionModel.load_config(REALVIS_ID, subfolder="unet")
+    config = UNet2DConditionModel.load_config(REALVIS_ID, subfolder="unet", revision=videomodellen.revisie(REALVIS_ID))
 
     def lege_unet():
         # In fp16 opbouwen: het standaardtype fp32 zou eerst 10 GB RAM vragen.
@@ -360,19 +360,24 @@ def _laad_pijplijn(meld):
                 from transformers import CLIPVisionModelWithProjection
 
                 encoder = CLIPVisionModelWithProjection.from_pretrained(
-                    "h94/IP-Adapter", subfolder="models/image_encoder", torch_dtype=torch.float16
+                    "h94/IP-Adapter", subfolder="models/image_encoder", torch_dtype=torch.float16,
+                    revision=videomodellen.revisie("h94/IP-Adapter"),
                 )
                 pipe = StableDiffusionXLPipeline.from_pretrained(
-                    sdxl, torch_dtype=torch.float16, variant="fp16", image_encoder=encoder, **extra
+                    sdxl, torch_dtype=torch.float16, variant="fp16", image_encoder=encoder,
+                    revision=videomodellen.revisie(sdxl), **extra
                 )
                 gewicht = "ip-adapter-plus_sdxl_vit-h.safetensors"
                 # Drie keer dezelfde adapter: de eerste volgt een speler, de tweede een plek, de derde een voorwerp (eigen sterkte per adapter).
-                pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name=[gewicht, gewicht, gewicht])
+                pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models", weight_name=[gewicht, gewicht, gewicht],
+                                     revision=videomodellen.revisie("h94/IP-Adapter"))
                 _ip_beschikbaar = True
             except Exception:  # noqa: BLE001 - zonder adapter werkt SDXL gewoon, alleen zonder voorbeeldbeeld
                 traceback.print_exc()
                 _ip_beschikbaar = False
-                pipe = StableDiffusionXLPipeline.from_pretrained(sdxl, torch_dtype=torch.float16, variant="fp16", **extra)
+                pipe = StableDiffusionXLPipeline.from_pretrained(
+                    sdxl, torch_dtype=torch.float16, variant="fp16", revision=videomodellen.revisie(sdxl), **extra
+                )
             # De sampler die bij Juggernaut en RealVisXL hoort (DPM++ 2M SDE met Karras-sigma's).
             from diffusers import DPMSolverMultistepScheduler
 
@@ -387,6 +392,7 @@ def _laad_pijplijn(meld):
             from transformers import T5EncoderModel
 
             repo = "black-forest-labs/FLUX.1-schnell"
+            vast = videomodellen.revisie(repo)  # de versie op schijf, zie videomodellen.revisie
             meld("Beeldmodel laden (FLUX.1-schnell)…")
             transformer = FluxTransformer2DModel.from_pretrained(
                 repo,
@@ -395,6 +401,7 @@ def _laad_pijplijn(meld):
                     load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
                 ),
                 torch_dtype=torch.bfloat16,
+                revision=vast,
             )
             # T5 in 4-bit (niet 8-bit): een 8-bit model kan niet terug naar de CPU, bleef dan naast het
             # beeldnetwerk op de GPU staan en samen pasten die niet op 12 GB. 4-bit wisselt wel netjes.
@@ -405,9 +412,10 @@ def _laad_pijplijn(meld):
                     load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
                 ),
                 torch_dtype=torch.bfloat16,
+                revision=vast,
             )
             pipe = FluxPipeline.from_pretrained(
-                repo, transformer=transformer, text_encoder_2=t5, torch_dtype=torch.bfloat16
+                repo, transformer=transformer, text_encoder_2=t5, torch_dtype=torch.bfloat16, revision=vast
             )
             pipe.enable_model_cpu_offload()
 
