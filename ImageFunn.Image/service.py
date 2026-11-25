@@ -757,9 +757,8 @@ def _draai_video(taak: Taak) -> None:
             if vanaf_beeld and not Path(o.bron_beeld).is_file():
                 raise RuntimeError("Het bronbeeld is niet gevonden.")
 
+            # Beide videomodellen (Wan 2.2 TI2V-5B, gewoon en snel) kunnen zowel tekst als beeld naar video.
             vm = videomodellen.kies(o.videomodel)
-            if not vanaf_beeld and not vm.t2v:
-                raise RuntimeError(f"{vm.naam} kan alleen een beeld laten bewegen: kies een bronbeeld of een ander videomodel.")
             pipe = _laad_videopijplijn(lambda tekst: setattr(taak, "stap", tekst), vanaf_beeld, o.videomodel)
 
             frames = vm.frames(o.frames)
