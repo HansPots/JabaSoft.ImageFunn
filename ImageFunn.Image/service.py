@@ -1169,9 +1169,13 @@ def _draai_film(taak: Taak) -> None:
             stappen = vm.stappen
 
             def aanroep(i: int, bron) -> dict:
-                """De argumenten voor het animeren van scène i: dezelfde bij het vooraf omzetten van de tekst en bij het animeren."""
+                """
+                De argumenten voor het animeren van scène i: dezelfde bij het vooraf omzetten van de tekst en bij het animeren.
+                Negatief = die van het videomodel (tegen schokkerige, wazige of stilstaande beweging). o.negatief hoort bij de
+                beeldstijl ("geen tekening" e.d.) en is alleen voor de sleutelbeelden; die zou Wans eigen negatief vervangen.
+                """
                 return dict(
-                    prompt=_animatieprompt(scenes[i], stijl), negatief=o.negatief or None,
+                    prompt=_animatieprompt(scenes[i], stijl), negatief=None,
                     breedte=breedte, hoogte=hoogte, frames=vm.frames(scenes[i].seconden * vm.fps + 1),
                     stappen=stappen, seed=basis_seed + i, bron=bron,
                 )
