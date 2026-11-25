@@ -49,8 +49,10 @@ sys.stderr.reconfigure(encoding="utf-8")
 
 app = FastAPI(title="ImageFunn Image Service")
 
-UITVOER = Path(__file__).parent / "uitvoer"
-UITVOER.mkdir(exist_ok=True)
+# Waar beelden, video's en films komen. De Brug geeft zijn gegevensmap mee (IMAGEFUNN_UITVOER, standaard
+# D:\JabasoftDeBrug\ImageFunn\uitvoer); zonder die variabele de map naast deze code, zoals voorheen.
+UITVOER = Path(os.environ.get("IMAGEFUNN_UITVOER") or (Path(__file__).parent / "uitvoer"))
+UITVOER.mkdir(parents=True, exist_ok=True)
 
 # "realvis" (standaard): RealVisXL V5.0, een fotorealistische SDXL-variant. "juggernaut": JuggernautXL Ragnarok, ook fotorealistisch.
 # "flux": FLUX.1-schnell (vraagt een Hugging Face-login).
@@ -1353,6 +1355,21 @@ def _ontlaad_wacht() -> None:
 threading.Thread(target=_ontlaad_wacht, daemon=True, name="ontlader").start()
 
 
+def _hier(pad: str | None, job_id: str) -> str | None:
+    """
+    Een pad uit een meta.json, omgezet naar de huidige uitvoermap als de map verhuisd is (bijvoorbeeld van de oude
+    ImageFunn-map naar de gegevensmap van de Brug): alles vanaf de map van de opdracht blijft gelijk.
+    """
+    if not pad or Path(pad).is_file():
+        return pad
+    delen = Path(pad).parts
+    if job_id in delen:
+        nieuw = UITVOER.joinpath(*delen[delen.index(job_id):])
+        if nieuw.is_file():
+            return str(nieuw)
+    return pad
+
+
 def _lees_bestaande() -> None:
     for meta in UITVOER.glob("*/meta.json"):
         try:
@@ -1375,7 +1392,10 @@ def _lees_bestaande() -> None:
                 ),
             )
             taak.gemaakt_op, taak.status, taak.stap = d["gemaakt_op"], "klaar", "Klaar"
-            taak.bestand, taak.seed, taak.voortgang = d["bestand"], d.get("seed"), 1.0
+            jid = d["job_id"]
+            for sc in taak.opdracht.scenes:
+                sc.bestand, sc.sleutel = _hier(sc.bestand, jid), _hier(sc.sleutel, jid)
+            taak.bestand, taak.seed, taak.voortgang = _hier(d["bestand"], jid), d.get("seed"), 1.0
             taak.opdracht.stappen = d.get("stappen")
             TAKEN[taak.job_id] = taak
         except Exception:  # noqa: BLE001 - een kapotte meta.json mag de service niet blokkeren
@@ -1397,6 +1417,7 @@ def health() -> dict[str, Any]:
     return {
         "ok": True,
         "versie": VERSIE,
+        "uitvoer": str(UITVOER),
         "model": MODEL_KEUZE,
         "model_geladen": _pipe is not None,
         "video_model_geladen": _video_pipe is not None,
