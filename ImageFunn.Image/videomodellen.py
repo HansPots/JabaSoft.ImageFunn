@@ -62,12 +62,6 @@ class Videomodel:
         return pipe(**kw).frames[0]
 
 
-def _bf16():
-    import torch
-
-    return torch.bfloat16
-
-
 # ------------------------------------------------------------------ tekst omzetten
 
 
@@ -261,8 +255,14 @@ def _wan_pijplijn(transformer):
     import torch
     from diffusers import AutoencoderKLWan, WanPipeline
 
+    # De gewichten van het videonetwerk bewaard in 8-bit (float8), rekenen gebeurt per laag in bfloat16. In bfloat16
+    # alleen is het netwerk al 10 GB; met de tussenresultaten kwam de piek op 13,7 GB, meer dan de 12 GB van de kaart.
+    # Windows leende de rest uit het werkgeheugen en dat maakte elke stap ruim een minuut (gemeten: 88 s/stap). In 8-bit
+    # is het ±5 GB en past alles; het kost een heel klein beetje precisie. Normlagen en inbeddingen blijven ongemoeid.
+    # Pas ná from_pretrained: dat zet meegegeven onderdelen nog om naar torch_dtype, en dat liep stuk op de 8-bit-opslag.
     vae = AutoencoderKLWan.from_pretrained(WAN_ID, subfolder="vae", torch_dtype=torch.float32)
     pipe = WanPipeline.from_pretrained(WAN_ID, vae=vae, transformer=transformer, torch_dtype=torch.bfloat16)
+    pipe.transformer.enable_layerwise_casting(storage_dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16)
     pipe.enable_model_cpu_offload()
     _tekst_op_processor(pipe, _WAN_TEKST)
     pipe.vae.enable_tiling()
@@ -277,11 +277,20 @@ def _laad_wan(meld):
 
 
 def _wan_i2v(pipe):
-    import torch
     from diffusers import WanImageToVideoPipeline
 
-    i2v = WanImageToVideoPipeline.from_pipe(pipe, dtype=_bf16())
-    i2v.vae.to(torch.float32)  # from_pipe zette ook de VAE op bfloat16; Wan wil die in float32
+    # Zelf opbouwen uit dezelfde onderdelen in plaats van from_pipe: dat zet alles om naar één type (zonder opgave
+    # float32), ook het 8-bit-netwerk - en daar crashte het proces op. Zo blijven de onderdelen precies zoals ze zijn,
+    # met hun offload-haken. expand_timesteps: Wan 2.2 (5B) houdt het eerste beeld vast via een masker.
+    i2v = WanImageToVideoPipeline(
+        tokenizer=pipe.tokenizer,
+        text_encoder=None,
+        vae=pipe.vae,
+        scheduler=pipe.scheduler,
+        transformer=pipe.transformer,
+        expand_timesteps=True,
+    )
+    i2v.set_progress_bar_config(disable=True)
     # De tekstencoder staat op None (zie _WAN_TEKST); ook deze pijplijn zet de tekst om op de processor.
     _tekst_op_processor(i2v, _WAN_TEKST)
     return i2v
